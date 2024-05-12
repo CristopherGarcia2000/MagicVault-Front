@@ -13,13 +13,10 @@ export default function App() {
   return (
     <View style={styles.container}>
       <Text>Bienvenido A Magic Vault</Text>
-      <NavigationContainer>
-      <Stack.Navigator>
-        <Stack.Screen name="Home" component={HomeScreen} />
-      </Stack.Navigator>
-    </NavigationContainer>
       <StatusBar style="auto" />
     </View>
+
+    
   );
 }
 
