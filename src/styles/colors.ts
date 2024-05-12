@@ -1,9 +1,10 @@
 const colors = {
-    beige: '#F5F5DC',
-    neutral: '#808080',
-    gold: '#DAA520',
-    yellow: '#F6A32D',
-    orange: '#F26419'
+    Beige: '#F5F5DC',
+    GreyNeutral: '#3f3f3f',
+    GreyDark: '#323030',
+    Gold: '#DAA520',
+    Yellow: '#F6A32D',
+    Orange: '#F26419'
   };
   
   export default colors;
