@@ -9,6 +9,7 @@ import SearchScreen from '../screens/search';
 import CollectionsScreen from '../screens/colections';
 import DecksScreen from '../screens/decks';
 import ScannerScreen from '../screens/scanner';
+import TabNavigation from './TabNavigation';
 
 const Drawer = createDrawerNavigator();
 
@@ -16,7 +17,7 @@ function AppNavigator() {
     return (
         <NavigationContainer>
             <Drawer.Navigator initialRouteName="Home">
-                <Drawer.Screen name="Home" component={HomeScreen} />
+                <Drawer.Screen name="TabNavigator" component={TabNavigation} />
                 <Drawer.Screen name="Login" component={LoginScreen} />
                 <Drawer.Screen name="Register" component={RegisterScreen} />
                 <Drawer.Screen name="Search" component={SearchScreen} />
