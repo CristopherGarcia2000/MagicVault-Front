@@ -8,10 +8,12 @@ import SearchScreen from '../screens/search';
 import CollectionsScreen from '../screens/colections';
 import DecksScreen from '../screens/decks';
 import ScannerScreen from '../screens/scanner';
+import TabNavigation from './TabNavigation';
 import colors from '../styles/colors';
 import HeaderLogo from './header';
 import UserProfileScreen from '../screens/userProfile';
 import UserProfileButton from './userProfileButton';
+
 
 const Drawer = createDrawerNavigator();
 
@@ -36,6 +38,7 @@ function AppNavigator() {
                     headerRight: () => <UserProfileButton/>
                 }}
             >
+                <Drawer.Screen name="TabNavigator" component={TabNavigation} />
                 <Drawer.Screen name="Home" component={HomeScreen} />
                 <Drawer.Screen name="Login" component={LoginScreen} />
                 <Drawer.Screen name="Register" component={RegisterScreen} />
@@ -43,9 +46,7 @@ function AppNavigator() {
                 <Drawer.Screen name="Collections" component={CollectionsScreen} />
                 <Drawer.Screen name="Decks" component={DecksScreen} />
                 <Drawer.Screen name="Scanner" component={ScannerScreen} />
-                <Drawer.Screen name="UserProfile" component={UserProfileScreen} />
-
-            
+                <Drawer.Screen name="UserProfile" component={UserProfileScreen} />          
 
             </Drawer.Navigator>
         </NavigationContainer>
