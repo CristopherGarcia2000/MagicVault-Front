@@ -1,20 +1,46 @@
 import { StatusBar } from 'expo-status-bar';
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import Colors from '../styles/colors';
+import { fetchExpansions } from '../services/api/api';
 
 const SearchScreen: React.FC = () => {
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedType, setSelectedType] = useState<string>('');
   const [selectedExpansion, setSelectedExpansion] = useState<string>('');
+  const [expansions, setExpansions] = useState<{ label: string; value: string }[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
 
-  const colors: { name: string; backgroundColor: string }[] = [
-    { name: 'green', backgroundColor: 'green' },
-    { name: 'white', backgroundColor: 'white' },
-    { name: 'blue', backgroundColor: 'blue' },
-    { name: 'black', backgroundColor: 'black' },
-    { name: 'red', backgroundColor: 'red' }
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const fetchedExpansions = await fetchExpansions();
+        setExpansions(fetchedExpansions);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const colors = [
+    { name: 'green', image: require('../../assets/green.png') },
+    { name: 'white', image: require('../../assets/white.png') },
+    { name: 'blue', image: require('../../assets/blue.png') },
+    { name: 'black', image: require('../../assets/black.png') },
+    { name: 'red', image: require('../../assets/red.png') },
+    { name: 'colorless', image: require('../../assets/colorless.png') },
+    
+  ];
+
+  const types = [
+    { label: 'Criatura', value: 'criatura' },
+    { label: 'Conjuro', value: 'conjuro' },
+    { label: 'Instantáneo', value: 'instantaneo' },
   ];
 
   const toggleColor = (color: string) => {
@@ -22,6 +48,14 @@ const SearchScreen: React.FC = () => {
       prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color]
     );
   };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#fff" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -39,10 +73,11 @@ const SearchScreen: React.FC = () => {
               onPress={() => toggleColor(color.name)}
               style={[
                 styles.colorButton,
-                { backgroundColor: color.backgroundColor },
                 selectedColors.includes(color.name) && styles.selectedColorButton,
               ]}
-            />
+            >
+              <Image source={color.image} style={styles.colorImage} />
+            </TouchableOpacity>
           ))}
         </View>
         <View style={styles.pickerContainer}>
@@ -52,8 +87,9 @@ const SearchScreen: React.FC = () => {
             style={styles.picker}
           >
             <Picker.Item label="Tipos" value="" />
-            <Picker.Item label="Criatura" value="criatura" />
-            <Picker.Item label="Hechizo" value="hechizo" />
+            {types.map((type) => (
+              <Picker.Item key={type.value} label={type.label} value={type.value} />
+            ))}
           </Picker>
           <Picker
             selectedValue={selectedExpansion}
@@ -61,8 +97,9 @@ const SearchScreen: React.FC = () => {
             style={styles.picker}
           >
             <Picker.Item label="Expansión" value="" />
-            <Picker.Item label="Expansión 1" value="expansion1" />
-            <Picker.Item label="Expansión 2" value="expansion2" />
+            {expansions.map((expansion) => (
+              <Picker.Item key={expansion.value} label={expansion.label} value={expansion.value} />
+            ))}
           </Picker>
         </View>
       </View>
@@ -112,6 +149,11 @@ const styles = StyleSheet.create({
   selectedColorButton: {
     borderColor: '#fff',
   },
+  colorImage: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+  },
   pickerContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -133,7 +175,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: Colors.GreyNeutral,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });
 
 export default SearchScreen;
-
