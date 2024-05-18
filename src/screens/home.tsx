@@ -1,9 +1,8 @@
-import { StatusBar } from 'expo-status-bar';
-import React from 'react';
 import Colors from '../styles/colors'
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Button, StyleSheet, Text, View } from 'react-native';
-import { fetchRandomCommander } from '../services/scryfall';
+import { fetchRandomCommander } from '../services/api/api';
+import { Card } from '../types/cardType';
 
 
 export default function HomeScreen() {
@@ -16,7 +15,7 @@ export default function HomeScreen() {
   const fetchCommander = async () => {
     try {
       setLoading(true);
-      const commander = await fetchRandomCommander();
+      const commander:Card = await fetchRandomCommander();
       setRandomCommander(commander);
     } catch (error) {
       console.error('Error fetching commander:', error);
