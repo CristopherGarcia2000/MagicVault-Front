@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import colors from '../styles/colors';
+import Colors from '../styles/colors';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 
 export default function LoginScreen() {
@@ -47,7 +47,7 @@ export default function LoginScreen() {
       </View>
 
       {isLoading ? (
-        <ActivityIndicator size="large" color={colors.Gold} />
+        <ActivityIndicator size="large" color={Colors.Gold} />
       ) : (
         <TouchableOpacity style={styles.button} onPress={handleLogin}>
           <Text style={styles.buttonText}>Login</Text>
@@ -63,12 +63,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
-    backgroundColor: colors.GreyNeutral,
+    backgroundColor: Colors.GreyNeutral,
   },
   title: {
     fontSize: 24,
     marginBottom: 20,
-    color: colors.Beige,
+    color: Colors.Beige,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: colors.GreyDark,
+    borderColor: Colors.GreyDark,
     padding: 10,
   },
   input: {
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
     color: 'black',
   },
   button: {
-    backgroundColor: colors.Gold,
+    backgroundColor: Colors.Gold,
     padding: 15,
     borderRadius: 5,
     marginTop: 20,

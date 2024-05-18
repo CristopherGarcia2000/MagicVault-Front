@@ -1,8 +1,10 @@
 import { StatusBar } from 'expo-status-bar';
+import React from 'react';
+import Colors from '../styles/colors'
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Button, StyleSheet, Text, View } from 'react-native';
-import colors from '../styles/colors'
 import { fetchRandomCommander } from '../services/scryfall';
+
 
 export default function HomeScreen() {
   const [randomCommander, setRandomCommander] = useState<any>(null);
@@ -45,7 +47,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.GreyNeutral,
+    backgroundColor: Colors.GreyNeutral,
     alignItems: 'center',
     justifyContent: 'center',
   },
