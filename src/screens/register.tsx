@@ -1,29 +1,48 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, KeyboardAvoidingView, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, KeyboardAvoidingView, ActivityIndicator, Modal, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
 import Colors from '../styles/colors';
+import { useNavigation } from '@react-navigation/native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { registerUser, loginUser } from '../services/api/api';
+import { AuthProvider, useAuth } from '../components/context/AuthContext';
 
 export default function RegisterScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [email,setEmail] = useState('');
+  const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
 
+  const { login } = useAuth();
   const navigation = useNavigation<DrawerNavigationProp<RootStackParamList>>();
 
-  const handlerRegister = () => {
+  const handlerRegister = async () => {
+    if (!username || !email || !password) {
+      setModalMessage('Por favor, rellena todos los campos.');
+      setModalVisible(true);
+      return;
+    }
+
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const token = await registerUser(username, email, password);
+      const user = await loginUser(username , password); 
+      login(user, token);
       navigation.navigate('Home');
-    }, 2000);
+    } catch (error:any) {
+      setModalMessage(error.message);
+      setModalVisible(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <KeyboardAvoidingView behavior="padding" style={styles.container}>
-      <Text style={styles.title}>Bienvenido al Register</Text>
+      <Text style={styles.title}>Bienvenido al Registro</Text>
+
       <View style={styles.inputContainer}>
         <Ionicons name="person-outline" size={20} color="grey" />
         <TextInput
@@ -65,6 +84,27 @@ export default function RegisterScreen() {
           <Text style={styles.buttonText}>Register</Text>
         </TouchableOpacity>
       )}
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setModalVisible(!modalVisible);
+        }}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalText}>{modalMessage}</Text>
+            <Pressable
+              style={[styles.button, styles.buttonClose]}
+              onPress={() => setModalVisible(!modalVisible)}
+            >
+              <Text style={styles.textStyle}>Cerrar</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -109,5 +149,38 @@ const styles = StyleSheet.create({
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 22,
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 35,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  buttonClose: {
+    backgroundColor: Colors.Gold,
+  },
+  textStyle: {
+    color: 'white',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: 'center',
   },
 });
