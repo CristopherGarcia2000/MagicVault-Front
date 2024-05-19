@@ -23,7 +23,7 @@ const CardPreview: React.FC<CardPreviewProps> = ({ visible, onClose, card }) => 
       <View style={styles.overlay}>
         <View style={styles.modal}>
           <Image
-            source={{ uri: card.image_uris?.normal }}
+            source={{ uri: card.image_uris?.png }}
             style={styles.image}
             resizeMode="contain"
           />

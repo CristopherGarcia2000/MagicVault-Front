@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Button, Image, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Button, Image, Pressable, StyleSheet, Text, Touchable, TouchableOpacity, View } from 'react-native';
 import { fetchRandomCommander } from '../services/api/api';
 import { Card } from '../types/cardsType';
 import colors from '../styles/colors';
+import CardPreview from '../components/cardPreview';
 
 export default function HomeScreen() {
   const [randomCommander, setRandomCommander] = useState<Card | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [isCardPreviewVisible,setIsCardPreviewVisible] = useState<boolean>(false);
 
   useEffect(() => {
     fetchCommander();
@@ -27,6 +29,12 @@ export default function HomeScreen() {
   const handleGenerateRandomCommander = () => {
     fetchCommander();
   };
+  const handleImagePress = () => {
+    setIsCardPreviewVisible(true);
+  }
+  const handleCloseCardPreview = () => {
+    setIsCardPreviewVisible(false);
+  }
 
   return (
     <View style={styles.container}>
@@ -36,16 +44,23 @@ export default function HomeScreen() {
         <>
           <Text>{randomCommander?.name}</Text>
           {randomCommander?.image_uris?.png ? (
-            <Image
-              source={{ uri: randomCommander.image_uris.png }}
-              style={{ width: 300, height: 300, resizeMode: 'contain' }}
-            />
+          <TouchableOpacity onPress={handleImagePress}>
+           <Image
+             source={{ uri: randomCommander?.image_uris?.png }}
+             style={{ width: 300, height: 300, resizeMode: 'contain' }}
+           />
+         </TouchableOpacity>
           ) : (
             <Text>No hay imagen disponible para este comandante.</Text>
           )}
           <Button title="Generar otro commander" onPress={handleGenerateRandomCommander} />
         </>
       )}
+      <CardPreview 
+        visible={isCardPreviewVisible}
+        onClose={handleCloseCardPreview}
+        card={randomCommander}
+      />
     </View>
   );
 }
