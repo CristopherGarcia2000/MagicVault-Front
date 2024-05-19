@@ -1,18 +1,24 @@
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
+import { Card } from '../../types/cardsType';
 
-const API_BASE_URL = 'http://192.168.1.42:8082';
+const API_BASE_URL = 'http://192.168.1.38:8082'; 
+
+export const fetchTypes = async () => {
+  const response = await axios.get(`${API_BASE_URL}/creature-types`);
+  return response.data;
+};
 
 export const fetchExpansions = async () => {
+  const response = await axios.get(`${API_BASE_URL}/sets`);
+  return response.data;
+};
+
+export const fetchRandomCommander = async (): Promise<Card> => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/sets`);
-    if (response.data && Array.isArray(response.data.data)) {
-      return response.data.data.map((item: { name: any; }) => ({ label: item.name, value: item.name }));
-    } else {
-      console.error('Unexpected response format:', response.data);
-      return [];
-    }
+    const response = await axios.get<Card>(`${API_BASE_URL}/random-commander`);
+    return response.data;
   } catch (error) {
-    console.error('Error fetching expansions:', error);
-    return [];
+    console.error('Fetch error:', error);
+    throw error;
   }
 };
