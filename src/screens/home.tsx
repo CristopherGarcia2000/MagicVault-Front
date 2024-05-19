@@ -1,13 +1,13 @@
-import Colors from '../styles/colors'
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Button, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Button, Image, StyleSheet, Text, View } from 'react-native';
 import { fetchRandomCommander } from '../services/api/api';
-import { Card } from '../types/cardType';
-
+import { Card } from '../types/cardsType';
+import colors from '../styles/colors';
 
 export default function HomeScreen() {
-  const [randomCommander, setRandomCommander] = useState<any>(null);
+  const [randomCommander, setRandomCommander] = useState<Card | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+
   useEffect(() => {
     fetchCommander();
   }, []);
@@ -15,7 +15,7 @@ export default function HomeScreen() {
   const fetchCommander = async () => {
     try {
       setLoading(true);
-      const commander:Card = await fetchRandomCommander();
+      const commander: Card = await fetchRandomCommander();
       setRandomCommander(commander);
     } catch (error) {
       console.error('Error fetching commander:', error);
@@ -27,27 +27,34 @@ export default function HomeScreen() {
   const handleGenerateRandomCommander = () => {
     fetchCommander();
   };
+
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+    <View style={styles.container}>
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />
-      ) : randomCommander ? (
+      ) : (
         <>
-          <Text>{randomCommander.name}</Text>
+          <Text>{randomCommander?.name}</Text>
+          {randomCommander?.image_uris?.png ? (
+            <Image
+              source={{ uri: randomCommander.image_uris.png }}
+              style={{ width: 300, height: 300, resizeMode: 'contain' }}
+            />
+          ) : (
+            <Text>No hay imagen disponible para este comandante.</Text>
+          )}
           <Button title="Generar otro commander" onPress={handleGenerateRandomCommander} />
         </>
-      ) : (
-        <Text>No se encontraron datos.</Text>
       )}
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.GreyNeutral,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    backgroundColor: colors.GreyNeutral,
+    padding: 16,
+    justifyContent: 'center', 
+    alignItems: 'center'
+  }
 });

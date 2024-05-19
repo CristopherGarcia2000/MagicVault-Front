@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from 'axios';
-import { Card } from '../../types/cardType';
+import { Card } from '../../types/cardsType';
 
-const API_BASE_URL = 'http://localhost:8081'; 
+const API_BASE_URL = 'http://192.168.1.38:8082'; 
 
 export const fetchTypes = async () => {
   const response = await axios.get(`${API_BASE_URL}/creature-types`);
@@ -13,14 +13,10 @@ export const fetchExpansions = async () => {
   return response.data;
 };
 
-export const fetchRandomCommander = async () => {
+export const fetchRandomCommander = async (): Promise<Card> => {
   try {
-    const response = await fetch('http://88.8.106.169:8185/random-commander');
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-    const data = await response.json();
-    return data;
+    const response = await axios.get<Card>(`${API_BASE_URL}/random-commander`);
+    return response.data;
   } catch (error) {
     console.error('Fetch error:', error);
     throw error;
