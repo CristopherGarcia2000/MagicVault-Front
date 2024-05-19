@@ -1,19 +1,25 @@
-import { StatusBar } from 'expo-status-bar';
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ActivityIndicator, Image, FlatList, Dimensions } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import Colors from '../styles/colors';
-import { fetchExpansions } from '../services/api/api';
+import { fetchExpansions, searchCards, CardSearchFilter } from '../services/api/api';
+import CardPreview from '../components/cardPreview';
+import { Card } from '../types/cardsType';
 
 const SearchScreen: React.FC = () => {
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedType, setSelectedType] = useState<string>('');
   const [selectedExpansion, setSelectedExpansion] = useState<string>('');
   const [expansions, setExpansions] = useState<{ label: string; value: string }[]>([]);
+  const [results, setResults] = useState<Card[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const [previewVisible, setPreviewVisible] = useState<boolean>(false);
+  const [cardName, setCardName] = useState<string>('');
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
         const fetchedExpansions = await fetchExpansions();
         setExpansions(fetchedExpansions);
@@ -27,43 +33,61 @@ const SearchScreen: React.FC = () => {
     fetchData();
   }, []);
 
-  const colors = [
-    { name: 'green', image: require('../../assets/green.png') },
-    { name: 'white', image: require('../../assets/white.png') },
-    { name: 'blue', image: require('../../assets/blue.png') },
-    { name: 'black', image: require('../../assets/black.png') },
-    { name: 'red', image: require('../../assets/red.png') },
-    { name: 'colorless', image: require('../../assets/colorless.png') },
-    
-  ];
-
-  const types = [
-    { label: 'Criatura', value: 'criatura' },
-    { label: 'Conjuro', value: 'conjuro' },
-    { label: 'Instantáneo', value: 'instantaneo' },
-  ];
-
   const toggleColor = (color: string) => {
     setSelectedColors((prev) =>
       prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color]
     );
   };
 
+  const handleSearch = async () => {
+    setLoading(true);
+    try {
+      const filter: CardSearchFilter = {};
+      if (selectedColors.length > 0) {
+        filter.colors = selectedColors;
+      }
+      if (selectedType) {
+        filter.type = selectedType;
+      }
+      if (selectedExpansion) {
+        filter.expansion = selectedExpansion;
+      }
+      if (cardName) {
+        filter.name = cardName;
+      }
+
+      const searchResults = await searchCards(filter);
+      setResults(searchResults.data);
+    } catch (error) {
+      console.error('Error searching cards:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const renderItem = ({ item }: { item: Card }) => (
+    <TouchableOpacity style={styles.card} onPress={() => { setSelectedCard(item); setPreviewVisible(true); }}>
+      <Image source={{ uri: item.image_uris?.png }} style={styles.cardImage} />
+      <Text style={styles.cardName}>{item.name}</Text>
+    </TouchableOpacity>
+  );
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#fff" />
+        <ActivityIndicator size="large" color="#ffffff" />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <StatusBar style="light" />
       <TextInput
         style={styles.searchBar}
         placeholder="Buscar Cartas..."
         placeholderTextColor="#777"
+        onChangeText={setCardName}
+        value={cardName}
       />
       <View style={styles.filters}>
         <View style={styles.colorFilter}>
@@ -103,12 +127,48 @@ const SearchScreen: React.FC = () => {
           </Picker>
         </View>
       </View>
-      <TouchableOpacity style={styles.searchButton}>
+      <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
         <Text style={styles.searchButtonText}>BUSCAR</Text>
       </TouchableOpacity>
+      <FlatList
+        data={results}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.name}
+        contentContainerStyle={styles.list}
+        numColumns={2}
+      />
+      {selectedCard && (
+        <CardPreview
+          visible={previewVisible}
+          onClose={() => setPreviewVisible(false)}
+          card={selectedCard}
+        />
+      )}
     </View>
   );
 };
+
+const { width } = Dimensions.get('window');
+const cardWidth = (width - 48) / 2;
+
+const colors = [
+  { name: 'W', image: require('../../assets/white.png') },
+  { name: 'U', image: require('../../assets/blue.png') },
+  { name: 'B', image: require('../../assets/black.png') },
+  { name: 'R', image: require('../../assets/red.png') },
+  { name: 'G', image: require('../../assets/green.png') },
+  { name: 'C', image: require('../../assets/colorless.png') },
+];
+
+const types = [
+  { label: 'Criatura', value: 'creature' },
+  { label: 'Conjuro', value: 'sorcery' },
+  { label: 'Instantáneo', value: 'instant' },
+  { label: 'Encantamiento', value: 'enchantment' },
+  { label: 'Artefacto', value: 'artifact' },
+  { label: 'Planeswalker', value: 'planeswalker' },
+  { label: 'Tierra', value: 'land' },
+];
 
 const styles = StyleSheet.create({
   container: {
@@ -174,6 +234,29 @@ const styles = StyleSheet.create({
     color: '#333',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  list: {
+    width: '100%',
+  },
+  card: {
+    width: cardWidth,
+    height: cardWidth * 1.4,
+    padding: 10,
+    backgroundColor: '#444',
+    marginVertical: 5,
+    marginHorizontal: 5,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  cardImage: {
+    width: '100%',
+    height: '80%',
+    resizeMode: 'contain',
+  },
+  cardName: {
+    color: '#fff',
+    fontSize: 16,
+    textAlign: 'center',
   },
   loadingContainer: {
     flex: 1,

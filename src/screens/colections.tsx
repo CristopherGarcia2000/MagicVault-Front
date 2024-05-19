@@ -7,7 +7,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 
 const screenWidth = Dimensions.get('window').width;
 
-// Función para generar un color aleatorio
+
 const getRandomColor = () => {
   const letters = '0123456789ABCDEF';
   let color = '#';

@@ -13,11 +13,13 @@ import UserProfileScreen from '../screens/userProfile';
 import UserProfileButton from './userProfileButton';
 import Footer from './footer';
 import { SelectedScreenProvider, useSelectedScreen } from '../components/context/selectedScreenContext';
+import { useAuth } from './context/AuthContext';
 
 const Drawer = createDrawerNavigator();
 
 function AppNavigator() {
   const { setSelectedScreen } = useSelectedScreen();
+  const { isAuthenticated } = useAuth();
 
   return (
     <NavigationContainer>
@@ -45,15 +47,21 @@ function AppNavigator() {
         })}
       >
         <Drawer.Screen name="Home" component={HomeScreen} />
+        
+        {isAuthenticated ? (
+          null
+      ) : (
         <Drawer.Screen name="Login" component={LoginScreen} />
+      )}
+        {isAuthenticated ? (
+        <Drawer.Screen name="UserProfile" component={UserProfileScreen}/>
+      ) : (
         <Drawer.Screen name="Register" component={RegisterScreen} />
+      )}
+      
         <Drawer.Screen name="Search" component={SearchScreen} />
         <Drawer.Screen name="Collections" component={CollectionsScreen} />
-        <Drawer.Screen name="Decks" component={DecksScreen} />
-        <Drawer.Screen name="UserProfile" component={UserProfileScreen}
-          options={{
-            drawerItemStyle: { display: 'none' }
-          }} />   
+        <Drawer.Screen name="Decks" component={DecksScreen} />  
       </Drawer.Navigator>
       <Footer />
     </NavigationContainer>
