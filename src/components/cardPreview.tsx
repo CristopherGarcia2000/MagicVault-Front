@@ -1,4 +1,3 @@
-// CardPreview.tsx
 import React from 'react';
 import { Modal, StyleSheet, Text, View, Image, TouchableOpacity, ScrollView } from 'react-native';
 import Colors from '../styles/colors';
@@ -7,11 +6,11 @@ import ManaText from './manaText';
 interface CardPreviewProps {
   visible: boolean;
   onClose: () => void;
-  commander: any; // Cambia esto según tu tipo de datos
+  card: any;
 }
 
-const CardPreview: React.FC<CardPreviewProps> = ({ visible, onClose, commander }) => {
-  if (!commander) {
+const CardPreview: React.FC<CardPreviewProps> = ({ visible, onClose, card }) => {
+  if (!card) {
     return null;
   }
 
@@ -24,21 +23,21 @@ const CardPreview: React.FC<CardPreviewProps> = ({ visible, onClose, commander }
       <View style={styles.overlay}>
         <View style={styles.modal}>
           <Image
-            source={{ uri: commander.image_uris.normal }}
+            source={{ uri: card.image_uris?.normal }}
             style={styles.image}
             resizeMode="contain"
           />
           <View style={styles.infoContainer}>
-            <Text style={styles.title}>{commander.name}</Text>
+            <Text style={styles.title}>{card.name}</Text>
             <View style={styles.typeAndCost}>
-              <Text style={styles.type}>{commander.type_line}</Text>
+              <Text style={styles.type}>{card.type_line}</Text>
+              <ManaText text={card.mana_cost} />
             </View>
-            <View style={styles.manaCostContainer}>
-                <ManaText text={commander.mana_cost} />
-              </View>
-            <Text style={styles.powerToughness}>{commander.power} / {commander.toughness}</Text>
+            {card.power && card.toughness && (
+              <Text style={styles.powerToughness}>{card.power} / {card.toughness}</Text>
+            )}
             <ScrollView style={styles.textContainer}>
-              <ManaText text={commander.oracle_text} />
+              <ManaText text={card.oracle_text} />
             </ScrollView>
           </View>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -64,11 +63,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   image: {
-    borderRadius:15,
+    borderRadius: 15,
     width: 200,
     height: 280,
     marginTop: 20,
-    alignSelf:'center'
+    alignSelf: 'center',
   },
   infoContainer: {
     padding: 10,

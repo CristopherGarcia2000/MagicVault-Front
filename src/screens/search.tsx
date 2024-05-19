@@ -14,6 +14,7 @@ const SearchScreen: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
         const fetchedExpansions = await fetchExpansions();
         setExpansions(fetchedExpansions);
@@ -34,13 +35,16 @@ const SearchScreen: React.FC = () => {
     { name: 'black', image: require('../../assets/black.png') },
     { name: 'red', image: require('../../assets/red.png') },
     { name: 'colorless', image: require('../../assets/colorless.png') },
-    
   ];
 
   const types = [
     { label: 'Criatura', value: 'criatura' },
     { label: 'Conjuro', value: 'conjuro' },
     { label: 'Instantáneo', value: 'instantaneo' },
+    { label: 'Encantamiento', value: 'encantamiento' },
+    { label: 'Artefacto', value: 'artefacto' },
+    { label: 'Planeswalker', value: 'planeswalker' },
+    { label: 'Tierra', value: 'tierra' },
   ];
 
   const toggleColor = (color: string) => {
@@ -52,7 +56,7 @@ const SearchScreen: React.FC = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#fff" />
+        <ActivityIndicator size="large" color="#ffffff" />
       </View>
     );
   }
