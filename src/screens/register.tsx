@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Colors from '../styles/colors';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { registerUser, loginUser } from '../services/api/api';
+import { registerUser, getUser } from '../services/api/api';
 import { AuthProvider, useAuth } from '../components/context/AuthContext';
 
 export default function RegisterScreen() {
@@ -28,7 +28,7 @@ export default function RegisterScreen() {
     setIsLoading(true);
     try {
       const token = await registerUser(username, email, password);
-      const user = await loginUser(username , password); 
+      const user = await getUser(username , password); 
       login(user, token);
       navigation.navigate('Home');
     } catch (error:any) {
