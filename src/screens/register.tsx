@@ -4,8 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import Colors from '../styles/colors';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
-import { registerUser, getUser } from '../services/api/api';
-import { AuthProvider, useAuth } from '../components/context/AuthContext';
+import { registerUser, loginUser } from '../services/api/api';
+import { useAuth } from '../components/context/AuthContext';
 
 export default function RegisterScreen() {
   const [username, setUsername] = useState('');
@@ -27,11 +27,14 @@ export default function RegisterScreen() {
 
     setIsLoading(true);
     try {
-      const token = await registerUser(username, email, password);
-      const user = await getUser(username , password); 
-      login(user, token);
+      // Registro de usuario
+      await registerUser(username, email, password);
+      // Inicio de sesión de usuario
+      const token = await loginUser(username, password);
+      login({ username }, token); // Pasar el usuario y el token a la función login
+      // Navegar a la pantalla principal
       navigation.navigate('Home');
-    } catch (error:any) {
+    } catch (error: any) {
       setModalMessage(error.message);
       setModalVisible(true);
     } finally {

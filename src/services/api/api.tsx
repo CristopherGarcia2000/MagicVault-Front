@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from 'axios';
 import { Card } from '../../types/cardsType';
 import  AsyncStorage  from '@react-native-async-storage/async-storage';
-const API_BASE_URL = 'http://192.168.1.38:8082'; 
+const API_BASE_URL = 'http://192.168.1.42:8082'; 
 
 export const fetchExpansions = async () => {
   try {
