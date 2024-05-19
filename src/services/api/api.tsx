@@ -1,7 +1,7 @@
 import axios, { AxiosResponse } from 'axios';
 import { Card } from '../../types/cardsType';
 import  AsyncStorage  from '@react-native-async-storage/async-storage';
-const API_BASE_URL = 'http://192.168.1.42:8082'; 
+const API_BASE_URL = 'http://192.168.1.38:8082'; 
 
 export const fetchExpansions = async () => {
   try {
@@ -61,7 +61,7 @@ export const registerUser = async (username: string, email: string, pass: string
     throw new Error('Error al conectar con el servidor');
   }
 };
-export const loginUser = async (username: string , pass: string) => {
+export const getUser = async (username: string , pass: string) => {
   try {
     const token = await AsyncStorage.getItem('loginToken');
     if (!token) {
@@ -84,3 +84,22 @@ export const loginUser = async (username: string , pass: string) => {
     throw new Error('Error al conectar con el servidor');
   }
 };
+
+export const loginUser = async (username:string,password:string) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/auth/login`, {
+      username,
+      password,
+    });
+    
+    if (response.status === 200) {
+      const token = response.data.token;
+      await AsyncStorage.setItem('loginToken', token);
+      return token;
+    } else {
+      throw new Error('Error al iniciar sesión');
+    }
+  } catch (error) {
+    throw new Error('Error al conectar con el servidor');
+  }
+}

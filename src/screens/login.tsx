@@ -4,20 +4,38 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import Colors from '../styles/colors';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { getUser, loginUser } from '../services/api/api';
+import { useAuth } from '../components/context/AuthContext';
 
 export default function LoginScreen() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
 
+  const { login } = useAuth();
   const navigation = useNavigation<DrawerNavigationProp<RootStackParamList>>();
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
+    if (!username || !password) {
+      setModalMessage('Por favor, rellena todos los campos.');
+      setModalVisible(true);
+      return;
+    }
+
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      // Llamar a la función de login del contexto de autenticación
+      const token = await loginUser(username, password);
+      login({ username }, token); // Pasar el usuario y el token a la función login
       navigation.navigate('Home');
-    }, 2000);
+    } catch (error) {
+      setModalMessage('Usuario o contraseña incorrectos.');
+      setModalVisible(true);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -99,3 +117,4 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
+
