@@ -105,6 +105,36 @@ export const loginUser = async (username: string, password: string) => {
   } catch (error) {
     throw new Error('Error al conectar con el servidor');
   }
+}
+export const getDecksFromUser = async (username:string) => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/decks/user/${username}`);
+    console.log(response.data)
+    return response.data; 
+  } catch (error) {
+    console.error('Error fetching user decks:', error);
+    throw error;
+  }
+};
+interface AddRemoveCardRequest {
+  deckname: string;
+  cardName: string;
+  user: string;
+}
+
+export const addCardToDeck = async (deckname: string, cardName: string, user: string) => {
+  try {
+    const response = await axios.put(`${API_BASE_URL}/decks/addCard`, {
+      deckname,
+      cardName,
+      user
+    } as AddRemoveCardRequest);
+    return response.data;
+  } catch (error) {
+    console.error('Error adding card to deck:', error);
+    throw error;
+  }
+};
 };
 
 // Colecciones API Calls
