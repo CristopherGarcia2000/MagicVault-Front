@@ -4,6 +4,7 @@ import { Picker } from '@react-native-picker/picker';
 import Colors from '../styles/colors';
 import { fetchExpansions, searchCards, CardSearchFilter } from '../services/api/api';
 import CardPreview from '../components/cardPreview';
+import ManaText from '../components/manaText';
 import { Card } from '../types/cardsType';
 
 const SearchScreen: React.FC = () => {
@@ -69,16 +70,14 @@ const SearchScreen: React.FC = () => {
     <TouchableOpacity style={styles.card} onPress={() => { setSelectedCard(item); setPreviewVisible(true); }}>
       <Image source={{ uri: item.image_uris?.png }} style={styles.cardImage} />
       <Text style={styles.cardName}>{item.name}</Text>
+      {item.mana_cost && <ManaText text={item.mana_cost} />}
+      <View style={styles.priceContainer}>
+        <Text style={styles.cardPrice}>
+          {item.prices.eur ? `€${item.prices.eur}` : 'N/A'}
+        </Text>
+      </View>
     </TouchableOpacity>
   );
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#ffffff" />
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>
@@ -130,13 +129,19 @@ const SearchScreen: React.FC = () => {
       <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
         <Text style={styles.searchButtonText}>BUSCAR</Text>
       </TouchableOpacity>
-      <FlatList
-        data={results}
-        renderItem={renderItem}
-        keyExtractor={(item) => item.name}
-        contentContainerStyle={styles.list}
-        numColumns={2}
-      />
+      <View style={styles.resultsContainer}>
+        {loading ? (
+          <ActivityIndicator size="large" color="#ffffff" />
+        ) : (
+          <FlatList
+            data={results}
+            renderItem={renderItem}
+            keyExtractor={(item) => item.name}
+            contentContainerStyle={styles.list}
+            numColumns={2}
+          />
+        )}
+      </View>
       {selectedCard && (
         <CardPreview
           visible={previewVisible}
@@ -175,7 +180,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.GreyNeutral,
     alignItems: 'center',
-    justifyContent: 'center',
     padding: 16,
   },
   searchBar: {
@@ -235,12 +239,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  resultsContainer: {
+    flex: 1,
+    width: '100%',
+    margin: 10,
+  },
   list: {
     width: '100%',
   },
   card: {
     width: cardWidth,
-    height: cardWidth * 1.4,
+    height: cardWidth * 1.3,
     padding: 10,
     backgroundColor: '#444',
     marginVertical: 5,
@@ -250,12 +259,25 @@ const styles = StyleSheet.create({
   },
   cardImage: {
     width: '100%',
-    height: '80%',
+    height: '60%',
     resizeMode: 'contain',
   },
   cardName: {
     color: '#fff',
     fontSize: 16,
+    textAlign: 'center',
+    marginVertical: 5,
+  },
+  priceContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    paddingHorizontal: 5,
+    marginTop: 5,
+  },
+  cardPrice: {
+    color: '#fff',
+    fontSize: 14,
     textAlign: 'center',
   },
   loadingContainer: {
