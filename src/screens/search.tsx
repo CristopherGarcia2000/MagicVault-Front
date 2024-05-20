@@ -141,7 +141,11 @@ const SearchScreen: React.FC = () => {
         <CardPreview
           visible={previewVisible}
           onClose={() => setPreviewVisible(false)}
-          card={selectedCard}
+          card={{
+            ...selectedCard,
+            power: selectedCard.power?.toString(),
+            toughness: selectedCard.toughness?.toString(),
+          }}
         />
       )}
     </View>
