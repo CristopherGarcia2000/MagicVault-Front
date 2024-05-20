@@ -1,13 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TextInput, ScrollView, Dimensions, TouchableOpacity, Button, Alert } from 'react-native';
 import Modal from 'react-native-modal';
 import { PieChart } from 'react-native-chart-kit';
 import Colors from '../styles/colors';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useAuth } from '../components/context/AuthContext';
+import { fetchCollections, addCollection, deleteCollection } from '../services/api/api';
+import { Collection } from '../types/collectionsTypes';
 
 const screenWidth = Dimensions.get('window').width;
 
-// Función para generar un color aleatorio
 const getRandomColor = () => {
   const letters = '0123456789ABCDEF';
   let color = '#';
@@ -18,11 +20,8 @@ const getRandomColor = () => {
 };
 
 const CollectionsScreen: React.FC = () => {
-  const [collections, setCollections] = useState([
-    { name: 'Cartas para cambiar', count: 454, value: 253, color: '#00bfa5' },
-    { name: 'Caja Ravnica Remastered', count: 231, value: 123, color: '#6200ea' },
-    { name: 'Caja Commander Masters', count: 121, value: 12, color: '#ffab00' },
-  ]);
+  const { user } = useAuth();
+  const [collections, setCollections] = useState<Collection[]>([]);
   const [newCollectionName, setNewCollectionName] = useState('');
   const [newCollectionCount, setNewCollectionCount] = useState('');
   const [newCollectionValue, setNewCollectionValue] = useState('');
@@ -31,50 +30,77 @@ const CollectionsScreen: React.FC = () => {
   const [collectionToDelete, setCollectionToDelete] = useState<string | null>(null);
   const [searchText, setSearchText] = useState('');
 
+  useEffect(() => {
+    const loadCollections = async () => {
+      try {
+        const userCollections = await fetchCollections(user.username);
+        setCollections(userCollections);
+      } catch (error) {
+        console.error('Error loading collections:', error);
+      }
+    };
+
+    loadCollections();
+  }, [user]);
+
   const totalValue = collections.reduce((acc, collection) => acc + collection.value, 0);
   const totalCards = collections.reduce((acc, collection) => acc + collection.count, 0);
 
   const data = collections.map(collection => ({
-    name: collection.name,
-    population: collection.value,  // Usamos el valor en lugar de la cantidad
+    collectionname: collection.collectionname,
+    population: collection.value,
     color: collection.color,
   }));
 
-  const addCollection = () => {
+  const handleAddCollection = async () => {
     if (!newCollectionName || !newCollectionCount || !newCollectionValue) {
       Alert.alert('Error', 'Por favor, complete todos los campos');
       return;
     }
 
     const newCollection = {
-      name: newCollectionName,
+      collectionname: newCollectionName,
       count: parseInt(newCollectionCount),
       value: parseFloat(newCollectionValue),
       color: getRandomColor(),
+      user: user.username,
     };
 
-    setCollections([...collections, newCollection]);
-    setNewCollectionName('');
-    setNewCollectionCount('');
-    setNewCollectionValue('');
-    setModalVisible(false);
-  };
-
-  const confirmDeleteCollection = (name: string) => {
-    setCollectionToDelete(name);
-    setConfirmModalVisible(true);
-  };
-
-  const deleteCollection = () => {
-    if (collectionToDelete) {
-      setCollections(collections.filter(collection => collection.name !== collectionToDelete));
-      setConfirmModalVisible(false);
-      setCollectionToDelete(null);
+    try {
+      await addCollection(newCollection);
+      setCollections([...collections, newCollection]);
+      setNewCollectionName('');
+      setNewCollectionCount('');
+      setNewCollectionValue('');
+      setModalVisible(false);
+    } catch (error) {
+      console.error('Error adding collection:', error);
     }
   };
 
+  const confirmDeleteCollection = (id: string | undefined) => {
+    if (id) {
+      setCollectionToDelete(id);
+      setConfirmModalVisible(true);
+    }
+  };
+
+  const handleDeleteCollection = async () => {
+    if (collectionToDelete) {
+      try {
+        await deleteCollection(collectionToDelete);
+        setCollections(collections.filter(collection => collection._id !== collectionToDelete));
+        setConfirmModalVisible(false);
+        setCollectionToDelete(null);
+      } catch (error) {
+        console.error('Error deleting collection:', error);
+      }
+    }
+  };
+  
+
   const filteredCollections = collections.filter(collection =>
-    collection.name.toLowerCase().includes(searchText.toLowerCase())
+    collection.collectionname.toLowerCase().includes(searchText.toLowerCase())
   );
 
   return (
@@ -103,27 +129,13 @@ const CollectionsScreen: React.FC = () => {
           paddingLeft="15"
           hasLegend={false}
           absolute
-          style={{ marginLeft: 150 }} 
+          style={{ marginLeft: 150 }}
         />
       </View>
       <Text style={styles.totalText}>{totalValue}€ en Colecciones</Text>
       <Text style={styles.cardCountText}>{totalCards} Cartas</Text>
       <ScrollView style={styles.collectionsContainer}>
-        {filteredCollections.map(collection => (
-          <TouchableOpacity key={collection.name} onPress={() => {/* Navigate to preview */}}>
-            <View style={styles.collectionItem}>
-              <View style={styles.collectionDetails}>
-                <Text style={styles.collectionName}>{collection.name}</Text>
-                <Text style={styles.collectionCount}>{collection.count} Cartas</Text>
-              </View>
-              <Text style={styles.collectionValue}>{collection.value}€</Text>
-              <View style={[styles.colorBar, { backgroundColor: collection.color }]} />
-              <TouchableOpacity onPress={() => confirmDeleteCollection(collection.name)}>
-                <MaterialIcons name="delete" size={20} color="#ff0000" style={styles.iconButton} />
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        ))}
+        
       </ScrollView>
       <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
         <Text style={styles.addButtonText}>Agregar Colección</Text>
@@ -156,7 +168,7 @@ const CollectionsScreen: React.FC = () => {
           />
           <View style={styles.modalButtonContainer}>
             <View style={styles.modalButton}>
-              <Button title="Agregar" onPress={addCollection} />
+              <Button title="Agregar" onPress={handleAddCollection} />
             </View>
             <View style={styles.modalButton}>
               <Button title="Cancelar" onPress={() => setModalVisible(false)} color="red" />
@@ -170,7 +182,7 @@ const CollectionsScreen: React.FC = () => {
           <Text style={styles.confirmText}>¿Estás seguro de que deseas eliminar esta colección?</Text>
           <View style={styles.modalButtonContainer}>
             <View style={styles.modalButton}>
-              <Button title="Sí" onPress={deleteCollection}/>
+              <Button title="Sí" onPress={handleDeleteCollection} />
             </View>
             <View style={styles.modalButton}>
               <Button title="No" onPress={() => setConfirmModalVisible(false)} color="red" />

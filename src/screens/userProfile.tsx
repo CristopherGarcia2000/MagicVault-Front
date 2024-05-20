@@ -1,23 +1,26 @@
-import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import Colors from '../styles/colors';
+import { View, Text, Button } from 'react-native';
+import { useAuth } from '../components/context/AuthContext';
+import { useNavigation } from '@react-navigation/native';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
 
-export default function UserProfileScreen() {
+
+const UserProfileScreen = () => {
+  const { user, logout } = useAuth();
+  const navigation = useNavigation<DrawerNavigationProp<RootStackParamList>>();
+
+  const handleLogout = () => {
+    logout();
+    navigation.navigate('Home');
+  };
+
   return (
-    <View style={styles.container}>
-      <Text>Bienvenido A UserProfile</Text>
-      <StatusBar style="auto" />
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text>Nombre de Usuario: {user?.username}</Text>
+      <Text>Email: {user?.email}</Text>
+      <Button title="Cerrar Sesión" onPress={handleLogout} />
     </View>
   );
-}
+};
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.GreyNeutral,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
-
+export default UserProfileScreen;
