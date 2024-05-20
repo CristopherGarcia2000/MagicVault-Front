@@ -1,7 +1,9 @@
 import axios, { AxiosResponse } from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Collection } from '../../types/collectionsTypes';
 import { Card } from '../../types/cardsType';
-import  AsyncStorage  from '@react-native-async-storage/async-storage';
-const API_BASE_URL = 'http://192.168.1.42:8082'; 
+
+const API_BASE_URL = 'http://192.168.1.42:8082';
 
 export const fetchExpansions = async () => {
   try {
@@ -39,7 +41,7 @@ export interface CardSearchFilter {
   expansion?: string;
   name?: string;
 }
-  
+
 export const registerUser = async (username: string, email: string, pass: string) => {
   try {
     const response = await axios.post(`${API_BASE_URL}/auth/register`, {
@@ -47,9 +49,9 @@ export const registerUser = async (username: string, email: string, pass: string
       pass,
       email,
     });
-    
+
     if (response.status === 200) {
-      const token = response.data.token; 
+      const token = response.data.token;
       await AsyncStorage.setItem('loginToken', token);
       return token;
     } else if (response.status === 400) {
@@ -61,7 +63,8 @@ export const registerUser = async (username: string, email: string, pass: string
     throw new Error('Error al conectar con el servidor');
   }
 };
-export const getUser = async (username: string , pass: string) => {
+
+export const getUser = async (username: string, pass: string) => {
   try {
     const token = await AsyncStorage.getItem('loginToken');
     if (!token) {
@@ -69,9 +72,9 @@ export const getUser = async (username: string , pass: string) => {
     }
 
     const response = await axios.post(`${API_BASE_URL}/auth/login`, {
-      username , 
+      username,
       pass,
-      headers: { Authorization: `Bearer ${token}` }, 
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (response.status === 200) {
@@ -85,13 +88,13 @@ export const getUser = async (username: string , pass: string) => {
   }
 };
 
-export const loginUser = async (username:string,password:string) => {
+export const loginUser = async (username: string, password: string) => {
   try {
     const response = await axios.post(`${API_BASE_URL}/auth/login`, {
       username,
       password,
     });
-    
+
     if (response.status === 200) {
       const token = response.data.token;
       await AsyncStorage.setItem('loginToken', token);
@@ -102,4 +105,35 @@ export const loginUser = async (username:string,password:string) => {
   } catch (error) {
     throw new Error('Error al conectar con el servidor');
   }
-}
+};
+
+// Colecciones API Calls
+export const fetchCollections = async (user: string): Promise<Collection[]> => {
+  try {
+    const response: AxiosResponse<Collection[]> = await axios.get(`${API_BASE_URL}/collections/user/${user}`);
+    console.log(response.data)
+    return response.data;
+  } catch (error) {
+    console.error('Fetch collections error:', error);
+    throw error;
+  }
+};
+
+export const addCollection = async (collection: Collection) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/collections`, collection);
+    return response.data;
+  } catch (error) {
+    console.error('Add collection error:', error);
+    throw error;
+  }
+};
+
+export const deleteCollection = async (id: string) => {
+  try {
+    await axios.delete(`${API_BASE_URL}/collections/${id}`);
+  } catch (error) {
+    console.error('Delete collection error:', error);
+    throw error;
+  }
+};
