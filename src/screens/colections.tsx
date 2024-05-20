@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TextInput, ScrollView, Dimensions, TouchableOpacity, Button, Alert } from 'react-native';
+import { StyleSheet, View, Text, TextInput, ScrollView, TouchableOpacity, Button, Alert } from 'react-native';
 import Modal from 'react-native-modal';
-import { PieChart } from 'react-native-chart-kit';
 import Colors from '../styles/colors';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../components/context/AuthContext';
 import { fetchCollections, addCollection, deleteCollection } from '../services/api/api';
 import { Collection } from '../types/collectionsTypes';
-
-const screenWidth = Dimensions.get('window').width;
 
 const getRandomColor = () => {
   const letters = '0123456789ABCDEF';
@@ -23,8 +20,6 @@ const CollectionsScreen: React.FC = () => {
   const { user } = useAuth();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [newCollectionName, setNewCollectionName] = useState('');
-  const [newCollectionCount, setNewCollectionCount] = useState('');
-  const [newCollectionValue, setNewCollectionValue] = useState('');
   const [isModalVisible, setModalVisible] = useState(false);
   const [isConfirmModalVisible, setConfirmModalVisible] = useState(false);
   const [collectionToDelete, setCollectionToDelete] = useState<string | null>(null);
@@ -37,41 +32,30 @@ const CollectionsScreen: React.FC = () => {
         setCollections(userCollections);
       } catch (error) {
         console.error('Error loading collections:', error);
+        Alert.alert('Error', 'No se pudo cargar las colecciones.');
       }
     };
 
     loadCollections();
   }, [user]);
 
-  const totalValue = collections.reduce((acc, collection) => acc + collection.value, 0);
-  const totalCards = collections.reduce((acc, collection) => acc + collection.count, 0);
-
-  const data = collections.map(collection => ({
-    collectionname: collection.collectionname,
-    population: collection.value,
-    color: collection.color,
-  }));
-
   const handleAddCollection = async () => {
-    if (!newCollectionName || !newCollectionCount || !newCollectionValue) {
+    if (!newCollectionName) {
       Alert.alert('Error', 'Por favor, complete todos los campos');
       return;
     }
 
     const newCollection = {
       collectionname: newCollectionName,
-      count: parseInt(newCollectionCount),
-      value: parseFloat(newCollectionValue),
       color: getRandomColor(),
       user: user.username,
+      collectionlist: [],
     };
 
     try {
       await addCollection(newCollection);
       setCollections([...collections, newCollection]);
       setNewCollectionName('');
-      setNewCollectionCount('');
-      setNewCollectionValue('');
       setModalVisible(false);
     } catch (error) {
       console.error('Error adding collection:', error);
@@ -97,7 +81,6 @@ const CollectionsScreen: React.FC = () => {
       }
     }
   };
-  
 
   const filteredCollections = collections.filter(collection =>
     collection.collectionname.toLowerCase().includes(searchText.toLowerCase())
@@ -112,30 +95,21 @@ const CollectionsScreen: React.FC = () => {
         value={searchText}
         onChangeText={setSearchText}
       />
-      <Text style={styles.title}>Valor Colección</Text>
-      <View style={styles.chartContainer}>
-        <PieChart
-          data={data}
-          width={screenWidth - 32}
-          height={220}
-          chartConfig={{
-            backgroundColor: Colors.GreyNeutral,
-            backgroundGradientFrom: Colors.GreyNeutral,
-            backgroundGradientTo: Colors.GreyNeutral,
-            color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-          }}
-          accessor="population"
-          backgroundColor="transparent"
-          paddingLeft="15"
-          hasLegend={false}
-          absolute
-          style={{ marginLeft: 150 }}
-        />
-      </View>
-      <Text style={styles.totalText}>{totalValue}€ en Colecciones</Text>
-      <Text style={styles.cardCountText}>{totalCards} Cartas</Text>
       <ScrollView style={styles.collectionsContainer}>
-        
+        {filteredCollections.map((collection) => (
+          <View key={collection._id} style={styles.collectionItem}>
+            <View style={[styles.colorBar, { backgroundColor: collection.color }]} />
+            <View style={styles.collectionDetails}>
+              <Text style={styles.collectionName}>{collection.collectionname}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => confirmDeleteCollection(collection._id)}
+            >
+              <MaterialIcons name="delete" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        ))}
       </ScrollView>
       <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
         <Text style={styles.addButtonText}>Agregar Colección</Text>
@@ -149,22 +123,6 @@ const CollectionsScreen: React.FC = () => {
             placeholderTextColor="#777"
             value={newCollectionName}
             onChangeText={setNewCollectionName}
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Cantidad de cartas"
-            placeholderTextColor="#777"
-            value={newCollectionCount}
-            onChangeText={setNewCollectionCount}
-            keyboardType="numeric"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Valor de la colección"
-            placeholderTextColor="#777"
-            value={newCollectionValue}
-            onChangeText={setNewCollectionValue}
-            keyboardType="numeric"
           />
           <View style={styles.modalButtonContainer}>
             <View style={styles.modalButton}>
@@ -215,11 +173,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 8,
     textAlign: 'center',
-  },
-  chartContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
   },
   totalText: {
     color: '#fff',

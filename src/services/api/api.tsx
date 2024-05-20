@@ -135,7 +135,6 @@ export const addCardToDeck = async (deckname: string, cardName: string, user: st
     throw error;
   }
 };
-};
 
 // Colecciones API Calls
 export const fetchCollections = async (user: string): Promise<Collection[]> => {
