@@ -80,16 +80,17 @@ const CollectionModal: React.FC<CollectionModalProps> = ({ visible, onClose, col
         <CardPreview
           visible={previewVisible}
           onClose={() => setPreviewVisible(false)}
-          card={selectedCard}
+          card={{
+      ...selectedCard,
+      power: selectedCard.power?.toString(),
+      toughness: selectedCard.toughness?.toString(),
+    }}
         />
       )}
     </Modal>
   );
 };
 
-const { width } = Dimensions.get('window');
-const numColumns = 4;
-const cardWidth = (width - 40 - (numColumns - 1) * 10) / numColumns;
 
 const styles = StyleSheet.create({
   modalContent: {
@@ -124,10 +125,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   card: {
-    height: cardWidth * 2.5,
-    width: cardWidth,
+    height: 190,
+    width: 100,
     padding: 5,
-    backgroundColor: '#444',
     marginVertical: 5,
     marginHorizontal: 5,
     borderRadius: 5,
