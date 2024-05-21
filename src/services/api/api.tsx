@@ -106,6 +106,7 @@ export const loginUser = async (username: string, password: string) => {
     throw new Error('Error al conectar con el servidor');
   }
 }
+
 export const getDecksFromUser = async (username:string) => {
   try {
     const response = await axios.get(`${API_BASE_URL}/decks/user/${username}`);
@@ -116,6 +117,7 @@ export const getDecksFromUser = async (username:string) => {
     throw error;
   }
 };
+
 interface AddRemoveCardRequest {
   deckname: string;
   cardName: string;
@@ -135,13 +137,11 @@ export const addCardToDeck = async (deckname: string, cardName: string, user: st
     throw error;
   }
 };
-};
 
 // Colecciones API Calls
 export const fetchCollections = async (user: string): Promise<Collection[]> => {
   try {
     const response: AxiosResponse<Collection[]> = await axios.get(`${API_BASE_URL}/collections/user/${user}`);
-    console.log(response.data)
     return response.data;
   } catch (error) {
     console.error('Fetch collections error:', error);
@@ -159,11 +159,22 @@ export const addCollection = async (collection: Collection) => {
   }
 };
 
-export const deleteCollection = async (id: string) => {
+interface RemoveColectionRequest {
+  deckname: string;
+  user: string;
+}
+
+export const deleteCollection = async (deckname: string,user: string) => {
   try {
-    await axios.delete(`${API_BASE_URL}/collections/${id}`);
+    const response = await axios.put(`${API_BASE_URL}/collections/delete`, {
+      deckname,
+      user
+    } as RemoveColectionRequest);
+    return response.data;
   } catch (error) {
-    console.error('Delete collection error:', error);
+    console.error('ERROR:', error);
     throw error;
-  }
+  }  
 };
+  
+

@@ -1,14 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TextInput, ScrollView, Dimensions, TouchableOpacity, Button, Alert } from 'react-native';
+import { StyleSheet, View, Text, TextInput, ScrollView, TouchableOpacity, Button, Alert } from 'react-native';
 import Modal from 'react-native-modal';
-import { PieChart } from 'react-native-chart-kit';
 import Colors from '../styles/colors';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../components/context/AuthContext';
 import { fetchCollections, addCollection, deleteCollection } from '../services/api/api';
 import { Collection } from '../types/collectionsTypes';
-
-const screenWidth = Dimensions.get('window').width;
 
 const getRandomColor = () => {
   const letters = '0123456789ABCDEF';
@@ -23,11 +20,9 @@ const CollectionsScreen: React.FC = () => {
   const { user } = useAuth();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [newCollectionName, setNewCollectionName] = useState('');
-  const [newCollectionCount, setNewCollectionCount] = useState('');
-  const [newCollectionValue, setNewCollectionValue] = useState('');
   const [isModalVisible, setModalVisible] = useState(false);
   const [isConfirmModalVisible, setConfirmModalVisible] = useState(false);
-  const [collectionToDelete, setCollectionToDelete] = useState<string | null>(null);
+  const [collectionToDelete, setCollectionToDelete] = useState<Collection | null>(null);
   const [searchText, setSearchText] = useState('');
 
   useEffect(() => {
@@ -37,59 +32,46 @@ const CollectionsScreen: React.FC = () => {
         setCollections(userCollections);
       } catch (error) {
         console.error('Error loading collections:', error);
+        Alert.alert('Error', 'No se pudo cargar las colecciones.');
       }
     };
 
     loadCollections();
   }, [user]);
 
-  const totalValue = collections.reduce((acc, collection) => acc + collection.value, 0);
-  const totalCards = collections.reduce((acc, collection) => acc + collection.count, 0);
-
-  const data = collections.map(collection => ({
-    collectionname: collection.collectionname,
-    population: collection.value,
-    color: collection.color,
-  }));
-
   const handleAddCollection = async () => {
-    if (!newCollectionName || !newCollectionCount || !newCollectionValue) {
+    if (!newCollectionName) {
       Alert.alert('Error', 'Por favor, complete todos los campos');
       return;
     }
 
     const newCollection = {
       collectionname: newCollectionName,
-      count: parseInt(newCollectionCount),
-      value: parseFloat(newCollectionValue),
       color: getRandomColor(),
       user: user.username,
+      collectionlist: [],
     };
 
     try {
       await addCollection(newCollection);
       setCollections([...collections, newCollection]);
       setNewCollectionName('');
-      setNewCollectionCount('');
-      setNewCollectionValue('');
       setModalVisible(false);
     } catch (error) {
       console.error('Error adding collection:', error);
     }
   };
 
-  const confirmDeleteCollection = (id: string | undefined) => {
-    if (id) {
-      setCollectionToDelete(id);
-      setConfirmModalVisible(true);
-    }
+  const confirmDeleteCollection = (collection: Collection) => {
+    setCollectionToDelete(collection);
+    setConfirmModalVisible(true);
   };
 
   const handleDeleteCollection = async () => {
     if (collectionToDelete) {
       try {
-        await deleteCollection(collectionToDelete);
-        setCollections(collections.filter(collection => collection._id !== collectionToDelete));
+        await deleteCollection(collectionToDelete.collectionname, collectionToDelete.user);
+        setCollections(collections.filter(collection => collection.collectionname !== collectionToDelete.collectionname || collection.user !== collectionToDelete.user));
         setConfirmModalVisible(false);
         setCollectionToDelete(null);
       } catch (error) {
@@ -97,7 +79,6 @@ const CollectionsScreen: React.FC = () => {
       }
     }
   };
-  
 
   const filteredCollections = collections.filter(collection =>
     collection.collectionname.toLowerCase().includes(searchText.toLowerCase())
@@ -112,30 +93,16 @@ const CollectionsScreen: React.FC = () => {
         value={searchText}
         onChangeText={setSearchText}
       />
-      <Text style={styles.title}>Valor Colección</Text>
-      <View style={styles.chartContainer}>
-        <PieChart
-          data={data}
-          width={screenWidth - 32}
-          height={220}
-          chartConfig={{
-            backgroundColor: Colors.GreyNeutral,
-            backgroundGradientFrom: Colors.GreyNeutral,
-            backgroundGradientTo: Colors.GreyNeutral,
-            color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-          }}
-          accessor="population"
-          backgroundColor="transparent"
-          paddingLeft="15"
-          hasLegend={false}
-          absolute
-          style={{ marginLeft: 150 }}
-        />
-      </View>
-      <Text style={styles.totalText}>{totalValue}€ en Colecciones</Text>
-      <Text style={styles.cardCountText}>{totalCards} Cartas</Text>
       <ScrollView style={styles.collectionsContainer}>
-        
+        {filteredCollections.map((collection) => (
+          <View key={collection.collectionname} style={styles.collectionItem}>
+            <View style={[styles.colorBar, { backgroundColor: collection.color }]} />
+            <Text style={styles.collectionName}>{collection.collectionname}</Text>
+            <TouchableOpacity onPress={() => confirmDeleteCollection(collection)}>
+              <MaterialIcons name="delete" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        ))}
       </ScrollView>
       <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
         <Text style={styles.addButtonText}>Agregar Colección</Text>
@@ -150,43 +117,19 @@ const CollectionsScreen: React.FC = () => {
             value={newCollectionName}
             onChangeText={setNewCollectionName}
           />
-          <TextInput
-            style={styles.input}
-            placeholder="Cantidad de cartas"
-            placeholderTextColor="#777"
-            value={newCollectionCount}
-            onChangeText={setNewCollectionCount}
-            keyboardType="numeric"
-          />
-          <TextInput
-            style={styles.input}
-            placeholder="Valor de la colección"
-            placeholderTextColor="#777"
-            value={newCollectionValue}
-            onChangeText={setNewCollectionValue}
-            keyboardType="numeric"
-          />
           <View style={styles.modalButtonContainer}>
-            <View style={styles.modalButton}>
-              <Button title="Agregar" onPress={handleAddCollection} />
-            </View>
-            <View style={styles.modalButton}>
-              <Button title="Cancelar" onPress={() => setModalVisible(false)} color="red" />
-            </View>
+            <Button title="Agregar" onPress={handleAddCollection} />
+            <Button title="Cancelar" onPress={() => setModalVisible(false)} color="red" />
           </View>
         </View>
       </Modal>
       <Modal isVisible={isConfirmModalVisible}>
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Confirmar Eliminación</Text>
-          <Text style={styles.confirmText}>¿Estás seguro de que deseas eliminar esta colección?</Text>
+          <Text>¿Estás seguro de que deseas eliminar esta colección?</Text>
           <View style={styles.modalButtonContainer}>
-            <View style={styles.modalButton}>
-              <Button title="Sí" onPress={handleDeleteCollection} />
-            </View>
-            <View style={styles.modalButton}>
-              <Button title="No" onPress={() => setConfirmModalVisible(false)} color="red" />
-            </View>
+            <Button title="Sí" onPress={handleDeleteCollection} />
+            <Button title="No" onPress={() => setConfirmModalVisible(false)} color="red" />
           </View>
         </View>
       </Modal>
@@ -209,31 +152,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 16,
   },
-  title: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  chartContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  totalText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginVertical: 8,
-  },
-  cardCountText: {
-    color: '#aaa',
-    fontSize: 14,
-    textAlign: 'center',
-    marginBottom: 16,
-  },
   collectionsContainer: {
     maxHeight: 250,
   },
@@ -245,31 +163,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#333',
     marginBottom: 8,
   },
-  collectionDetails: {
-    flex: 1,
-  },
   collectionName: {
     color: '#fff',
     fontSize: 14,
-  },
-  collectionCount: {
-    color: '#aaa',
-    fontSize: 12,
-  },
-  collectionValue: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginRight: 8,
+    flex: 1,
   },
   colorBar: {
     width: 20,
     height: '100%',
     borderRadius: 5,
     marginRight: 10,
-  },
-  iconButton: {
-    marginLeft: 8,
   },
   addButton: {
     backgroundColor: Colors.Gold,
@@ -307,16 +210,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 16,
-  },
-  modalButton: {
-    flex: 1,
-    marginHorizontal: 5,
-  },
-  confirmText: {
-    color: '#fff',
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 16,
   },
 });
 
