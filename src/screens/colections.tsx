@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TextInput, ScrollView, TouchableOpacity, Button, Alert } from 'react-native';
+import { StyleSheet, View, Text, TextInput, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import Modal from 'react-native-modal';
 import Colors from '../styles/colors';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../components/context/AuthContext';
-import { fetchCollections, addCollection, deleteCollection } from '../services/api/api';
+import { fetchCollections, addCollection, deleteCollection } from '../services/api/api'
 import { Collection } from '../types/collectionsTypes';
+import axios from 'axios';
+import CollectionModal from '../components/CollectionModal'; 
 
 const getRandomColor = () => {
   const letters = '0123456789ABCDEF';
@@ -24,6 +26,7 @@ const CollectionsScreen: React.FC = () => {
   const [isConfirmModalVisible, setConfirmModalVisible] = useState(false);
   const [collectionToDelete, setCollectionToDelete] = useState<Collection | null>(null);
   const [searchText, setSearchText] = useState('');
+  const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
 
   useEffect(() => {
     const loadCollections = async () => {
@@ -45,7 +48,7 @@ const CollectionsScreen: React.FC = () => {
       return;
     }
 
-    const newCollection = {
+    const newCollection: Collection = {
       collectionname: newCollectionName,
       color: getRandomColor(),
       user: user.username,
@@ -59,6 +62,15 @@ const CollectionsScreen: React.FC = () => {
       setModalVisible(false);
     } catch (error) {
       console.error('Error adding collection:', error);
+      if (axios.isAxiosError(error)) {
+        if (error.response && error.response.status === 409) {
+          Alert.alert('Error', 'La colección con el mismo nombre ya existe para este usuario');
+        } else {
+          Alert.alert('Error', 'No se pudo agregar la colección');
+        }
+      } else {
+        Alert.alert('Error', 'Ocurrió un error inesperado');
+      }
     }
   };
 
@@ -76,8 +88,17 @@ const CollectionsScreen: React.FC = () => {
         setCollectionToDelete(null);
       } catch (error) {
         console.error('Error deleting collection:', error);
+        Alert.alert('Error', 'No se pudo eliminar la colección');
       }
     }
+  };
+
+  const handleOpenCollection = (collection: Collection) => {
+    setSelectedCollection(collection);
+  };
+
+  const handleCloseCollection = () => {
+    setSelectedCollection(null);
   };
 
   const filteredCollections = collections.filter(collection =>
@@ -95,19 +116,19 @@ const CollectionsScreen: React.FC = () => {
       />
       <ScrollView style={styles.collectionsContainer}>
         {filteredCollections.map((collection) => (
-          <View key={collection.collectionname} style={styles.collectionItem}>
+          <TouchableOpacity key={collection.collectionname} style={styles.collectionItem} onPress={() => handleOpenCollection(collection)}>
             <View style={[styles.colorBar, { backgroundColor: collection.color }]} />
             <Text style={styles.collectionName}>{collection.collectionname}</Text>
             <TouchableOpacity onPress={() => confirmDeleteCollection(collection)}>
               <MaterialIcons name="delete" size={24} color="#fff" />
             </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
         ))}
       </ScrollView>
       <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
         <Text style={styles.addButtonText}>Agregar Colección</Text>
       </TouchableOpacity>
-      <Modal isVisible={isModalVisible}>
+      <Modal isVisible={isModalVisible} onBackdropPress={() => setModalVisible(false)}>
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Agregar Nueva Colección</Text>
           <TextInput
@@ -118,21 +139,37 @@ const CollectionsScreen: React.FC = () => {
             onChangeText={setNewCollectionName}
           />
           <View style={styles.modalButtonContainer}>
-            <Button title="Agregar" onPress={handleAddCollection} />
-            <Button title="Cancelar" onPress={() => setModalVisible(false)} color="red" />
+            <TouchableOpacity style={styles.modalButton} onPress={handleAddCollection}>
+              <Text style={styles.modalButtonText}>Agregar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setModalVisible(false)}>
+              <Text style={styles.modalButtonText}>Cancelar</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
-      <Modal isVisible={isConfirmModalVisible}>
+      <Modal isVisible={isConfirmModalVisible} onBackdropPress={() => setConfirmModalVisible(false)}>
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Confirmar Eliminación</Text>
-          <Text>¿Estás seguro de que deseas eliminar esta colección?</Text>
+          <Text style={styles.modalText}>¿Estás seguro de que deseas eliminar esta colección?</Text>
           <View style={styles.modalButtonContainer}>
-            <Button title="Sí" onPress={handleDeleteCollection} />
-            <Button title="No" onPress={() => setConfirmModalVisible(false)} color="red" />
+            <TouchableOpacity style={styles.modalButton} onPress={handleDeleteCollection}>
+              <Text style={styles.modalButtonText}>Sí</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setConfirmModalVisible(false)}>
+              <Text style={styles.modalButtonText}>No</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
+      {selectedCollection && (
+        <CollectionModal
+          visible={!!selectedCollection}
+          onClose={handleCloseCollection}
+          collectionName={selectedCollection.collectionname}
+          user={user.username}
+        />
+      )}
     </View>
   );
 };
@@ -180,36 +217,64 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     alignItems: 'center',
     marginVertical: 16,
+    position: 'absolute',
+    bottom: 50,
+    left: 16,
+    right: 16,
   },
   addButtonText: {
-    color: '#fff',
+    color: 'black',
     fontSize: 16,
     fontWeight: 'bold',
   },
   modalContent: {
-    backgroundColor: '#444',
+    backgroundColor: Colors.GreyNeutral,
     padding: 20,
     borderRadius: 10,
+    alignItems: 'center',
   },
   modalTitle: {
-    color: '#fff',
+    color: Colors.Gold,
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 16,
   },
+  modalText: {
+    color: '#fff',
+    fontSize: 16,
+    marginBottom: 16,
+  },
   input: {
     height: 40,
-    borderColor: '#555',
+    borderColor: Colors.Gold,
     borderWidth: 1,
     borderRadius: 5,
     paddingHorizontal: 10,
     color: '#fff',
-    marginBottom: 8,
+    marginBottom: 16,
+    width: '100%',
   },
   modalButtonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 16,
+    width: '100%',
+  },
+  modalButton: {
+    backgroundColor: Colors.Gold,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  cancelButton: {
+    backgroundColor: 'red',
+  },
+  modalButtonText: {
+    color: 'black',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
