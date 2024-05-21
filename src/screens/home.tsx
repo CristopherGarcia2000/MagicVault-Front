@@ -58,9 +58,8 @@ export default function HomeScreen() {
       )}
       <CardPreview 
         visible={isCardPreviewVisible}
-        onClose={handleCloseCardPreview}
-        card={randomCommander}
-      />
+        onClose={handleCloseCardPreview} 
+        card={null}      />
     </View>
   );
 }

@@ -105,12 +105,12 @@ export const loginUser = async (username: string, password: string) => {
   } catch (error) {
     throw new Error('Error al conectar con el servidor');
   }
-}
+};
 
 export const getDecksFromUser = async (username:string) => {
   try {
     const response = await axios.get(`${API_BASE_URL}/decks/user/${username}`);
-    console.log(response.data)
+    console.log(response.data);
     return response.data; 
   } catch (error) {
     console.error('Error fetching user decks:', error);
@@ -138,7 +138,6 @@ export const addCardToDeck = async (deckname: string, cardName: string, user: st
   }
 };
 
-// Colecciones API Calls
 export const fetchCollections = async (user: string): Promise<Collection[]> => {
   try {
     const response: AxiosResponse<Collection[]> = await axios.get(`${API_BASE_URL}/collections/user/${user}`);
@@ -154,8 +153,12 @@ export const addCollection = async (collection: Collection) => {
     const response = await axios.post(`${API_BASE_URL}/collections`, collection);
     return response.data;
   } catch (error) {
-    console.error('Add collection error:', error);
-    throw error;
+    if (axios.isAxiosError(error) && error.response?.status === 409) {
+      throw new Error('La colección con el mismo nombre ya existe para este usuario');
+    } else {
+      console.error('Add collection error:', error);
+      throw error;
+    }
   }
 };
 
@@ -164,17 +167,26 @@ interface RemoveColectionRequest {
   user: string;
 }
 
-export const deleteCollection = async (deckname: string,user: string) => {
+export const deleteCollection = async (deckname: string, user: string) => {
   try {
-    const response = await axios.put(`${API_BASE_URL}/collections/delete`, {
-      deckname,
-      user
-    } as RemoveColectionRequest);
+    const response = await axios.delete(`${API_BASE_URL}/collections/delete`, {
+      data: { deckname, user } as RemoveColectionRequest
+    });
     return response.data;
   } catch (error) {
     console.error('ERROR:', error);
     throw error;
   }  
 };
-  
 
+export const fetchCollectionCards = async (user: string, collectionName: string): Promise<Card[]> => {
+  try {
+    const response: AxiosResponse<Card[]> = await axios.get(`${API_BASE_URL}/collections/cards`, {
+      params: { user, collectionName },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Fetch collection cards error:', error);
+    throw error;
+  }
+};
