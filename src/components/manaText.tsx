@@ -1,4 +1,3 @@
-// ManaText.tsx
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 
@@ -9,7 +8,13 @@ const manaIcons: { [key: string]: any } = {
   '{R}': require('../../assets/red.png'),
   '{G}': require('../../assets/green.png'),
   '{C}': require('../../assets/colorless.png'),
-  
+  '{0}': require('../../assets/0.png'),
+  '{1}': require('../../assets/1.png'),
+  '{2}': require('../../assets/2.png'),
+  '{3}': require('../../assets/3.png'),
+  '{4}': require('../../assets/4.png'),
+  '{T}': require('../../assets/T.png'),
+  '{X}': require('../../assets/X.png'),
 };
 
 interface ManaTextProps {
@@ -41,7 +46,7 @@ const styles = StyleSheet.create({
   manaIcon: {
     width: 15,
     height: 15,
-    marginHorizontal: 1
+    marginHorizontal: 1,
   },
   text: {
     fontSize: 16,
