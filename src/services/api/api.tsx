@@ -190,3 +190,25 @@ export const fetchCollectionCards = async (user: string, collectionName: string)
     throw error;
   }
 };
+
+interface CardRemoveCardRequest {
+  deckname: string;
+  user: string;
+  cardName: string;
+  
+}
+
+export const removeCardFromDeck = async (deckname: string, user: string, cardName: string) => {
+  try {
+    const response = await axios.delete(`${API_BASE_URL}/collections/removeCard`, {
+      data: { deckname, user , cardName } as CardRemoveCardRequest,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error removing card from deck:', error);
+    throw error;
+  }
+};
