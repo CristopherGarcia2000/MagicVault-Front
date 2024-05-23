@@ -4,7 +4,7 @@ import { Collection } from '../../types/collectionsTypes';
 import { Card } from '../../types/cardsType';
 import { Deck } from '../../types/decksTypes';
 
-const API_BASE_URL = 'http://192.168.1.42:8082';
+const API_BASE_URL = 'http://192.168.1.38:8082';
 
 export const fetchExpansions = async () => {
   try {
