@@ -4,7 +4,7 @@ import { Collection } from '../../types/collectionsTypes';
 import { Card } from '../../types/cardsType';
 import { Deck } from '../../types/decksTypes';
 
-const API_BASE_URL = 'http://192.168.1.38:8082';
+const API_BASE_URL = 'http://192.168.1.42:8082';
 
 export const fetchExpansions = async () => {
   try {
@@ -111,7 +111,6 @@ export const loginUser = async (username: string, password: string) => {
 export const getDecksFromUser = async (username: string): Promise<Deck[]> => {
   try {
     const response = await axios.get(`${API_BASE_URL}/decks/user/${username}`);
-    console.log(response.data);
     return response.data; 
   } catch (error) {
     console.error('Error fetching user decks:', error);
@@ -153,7 +152,6 @@ export const addCardToDeck = async (deckname: string, cardName: string, user: st
 export const getCollectionsFromUser = async (username:string) => {
   try {
     const response = await axios.get(`${API_BASE_URL}/collections/user/${username}`);
-    console.log(response.data)
     return response.data; 
   } catch (error) {
     console.error('Error fetching user decks:', error);

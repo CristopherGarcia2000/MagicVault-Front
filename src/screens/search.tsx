@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ActivityIndicator, Image, FlatList, Dimensions } from 'react-native';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ActivityIndicator, Image, FlatList, Dimensions, Modal } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import Colors from '../styles/colors';
 import { fetchExpansions, searchCards, CardSearchFilter } from '../services/api/api';
 import CardPreview from '../components/cardPreview';
 import ManaText from '../components/manaText';
 import { Card } from '../types/cardsType';
-import { useAuth } from '../components/context/AuthContext'; // Importar el contexto de autenticación
+import { useAuth } from '../components/context/AuthContext';
 
 const SearchScreen: React.FC = () => {
-  const { addVisitedCard } = useAuth(); // Obtener la función para agregar una carta visitada desde el contexto
+  const { addVisitedCard } = useAuth();
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedType, setSelectedType] = useState<string>('');
   const [selectedExpansion, setSelectedExpansion] = useState<string>('');
@@ -19,6 +19,7 @@ const SearchScreen: React.FC = () => {
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [previewVisible, setPreviewVisible] = useState<boolean>(false);
   const [cardName, setCardName] = useState<string>('');
+  const [noResultsModalVisible, setNoResultsModalVisible] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,7 +61,16 @@ const SearchScreen: React.FC = () => {
       }
 
       const searchResults = await searchCards(filter);
-      setResults(searchResults.data);
+      if (searchResults && Array.isArray(searchResults.data)) {
+        setResults(searchResults.data);
+
+        if (searchResults.data.length === 0) {
+          setNoResultsModalVisible(true);
+        }
+      } else {
+        setResults([]);
+        setNoResultsModalVisible(true);
+      }
     } catch (error) {
       console.error('Error searching cards:', error);
     } finally {
@@ -69,7 +79,7 @@ const SearchScreen: React.FC = () => {
   };
 
   const handleCardPress = (card: Card) => {
-    addVisitedCard(card); // Agregar la carta visitada al contexto de autenticación
+    addVisitedCard(card);
     setSelectedCard(card);
     setPreviewVisible(true);
   };
@@ -161,9 +171,29 @@ const SearchScreen: React.FC = () => {
           }}
         />
       )}
+      <Modal
+        visible={noResultsModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setNoResultsModalVisible(false)}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>No hay resultados</Text>
+            <Text style={styles.modalMessage}>No se encontraron cartas con los criterios de búsqueda especificados.</Text>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setNoResultsModalVisible(false)}
+            >
+              <Text style={styles.modalButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
+
 const { width } = Dimensions.get('window');
 const cardWidth = (width - 48) / 2;
 
@@ -291,11 +321,46 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
-  loadingContainer: {
+  noResultsText: {
+    color: '#fff',
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  modalBackground: {
     flex: 1,
-    backgroundColor: Colors.GreyNeutral,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContainer: {
+    backgroundColor: Colors.GreyNeutral,
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.Gold,
+    marginBottom: 10,
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalButton: {
+    backgroundColor: Colors.Gold,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
