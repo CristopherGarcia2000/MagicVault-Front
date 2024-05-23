@@ -6,8 +6,10 @@ import { fetchExpansions, searchCards, CardSearchFilter } from '../services/api/
 import CardPreview from '../components/cardPreview';
 import ManaText from '../components/manaText';
 import { Card } from '../types/cardsType';
+import { useAuth } from '../components/context/AuthContext'; // Importar el contexto de autenticación
 
 const SearchScreen: React.FC = () => {
+  const { addVisitedCard } = useAuth(); // Obtener la función para agregar una carta visitada desde el contexto
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedType, setSelectedType] = useState<string>('');
   const [selectedExpansion, setSelectedExpansion] = useState<string>('');
@@ -66,8 +68,14 @@ const SearchScreen: React.FC = () => {
     }
   };
 
+  const handleCardPress = (card: Card) => {
+    addVisitedCard(card); // Agregar la carta visitada al contexto de autenticación
+    setSelectedCard(card);
+    setPreviewVisible(true);
+  };
+
   const renderItem = ({ item }: { item: Card }) => (
-    <TouchableOpacity style={styles.card} onPress={() => { setSelectedCard(item); setPreviewVisible(true); }}>
+    <TouchableOpacity style={styles.card} onPress={() => handleCardPress(item)}>
       <Image source={{ uri: item.image_uris?.png }} style={styles.cardImage} />
       <Text style={styles.cardName}>{item.name}</Text>
       {item.mana_cost && <ManaText text={item.mana_cost} />}
@@ -156,7 +164,6 @@ const SearchScreen: React.FC = () => {
     </View>
   );
 };
-
 const { width } = Dimensions.get('window');
 const cardWidth = (width - 48) / 2;
 
