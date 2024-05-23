@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {jwtDecode} from 'jwt-decode';
 import { Card } from '../../types/cardsType'; // Importar el tipo de datos Card
 
 interface AuthContextData {
@@ -25,7 +26,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const visitedCardsData = await AsyncStorage.getItem('visitedCards'); // Cargar las cartas visitadas del almacenamiento
 
       if (token && userData) {
-        setUser(JSON.parse(userData));
+        const decodedToken: any = jwtDecode(token);
+        const userWithMail = { ...JSON.parse(userData), email: decodedToken.email };
+        setUser(userWithMail);
         setIsAuthenticated(true);
       }
 
@@ -37,10 +40,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = async (user: any, token: string) => {
-    setUser(user);
+    const decodedToken: any = jwtDecode(token);
+    const userWithMail = { ...user, email: decodedToken.email };
+    setUser(userWithMail);
     setIsAuthenticated(true);
     await AsyncStorage.setItem('loginToken', token);
-    await AsyncStorage.setItem('userData', JSON.stringify(user));
+    await AsyncStorage.setItem('userData', JSON.stringify(userWithMail));
   };
 
   const logout = async () => {
