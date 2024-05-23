@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TextInput, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, View, Text, TextInput, ScrollView, TouchableOpacity, Alert, RefreshControl, Dimensions } from 'react-native';
 import Modal from 'react-native-modal';
+import { PieChart } from 'react-native-chart-kit';
 import Colors from '../styles/colors';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialIcons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { useAuth } from '../components/context/AuthContext';
-import { fetchCollections, addCollection, deleteCollection } from '../services/api/api'
+import { fetchCollections, addCollection, deleteCollection, fetchCollectionCards } from '../services/api/api';
 import { Collection } from '../types/collectionsTypes';
 import axios from 'axios';
-import CollectionModal from '../components/CollectionModal'; 
+import CollectionModal from '../components/CollectionModal';
 
 const getRandomColor = () => {
   const letters = '0123456789ABCDEF';
@@ -21,24 +22,39 @@ const getRandomColor = () => {
 const CollectionsScreen: React.FC = () => {
   const { user } = useAuth();
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [collectionPrices, setCollectionPrices] = useState<{ [key: string]: number }>({});
   const [newCollectionName, setNewCollectionName] = useState('');
   const [isModalVisible, setModalVisible] = useState(false);
   const [isConfirmModalVisible, setConfirmModalVisible] = useState(false);
   const [collectionToDelete, setCollectionToDelete] = useState<Collection | null>(null);
   const [searchText, setSearchText] = useState('');
   const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  const loadCollections = async () => {
+    try {
+      const userCollections = await fetchCollections(user.username);
+      setCollections(userCollections);
+
+      const prices = await Promise.all(userCollections.map(async (collection) => {
+        const totalValue = await loadCollectionsTotalPrice(collection.collectionname);
+        return { [collection.collectionname]: totalValue };
+      }));
+      setCollectionPrices(Object.assign({}, ...prices));
+    } catch (error) {
+      console.error('Error loading collections:', error);
+      Alert.alert('Error', 'No se pudo cargar las colecciones.');
+    }
+  };
+
+  const loadCollectionsTotalPrice = async (collectionName: string) => {
+    const fetchedCards = await fetchCollectionCards(user.username, collectionName);
+    const totalValue = fetchedCards.reduce((total, card) => total + (parseFloat(card.prices.eur) || 0), 0);
+    return parseFloat(totalValue.toFixed(2));
+  };
 
   useEffect(() => {
-    const loadCollections = async () => {
-      try {
-        const userCollections = await fetchCollections(user.username);
-        setCollections(userCollections);
-      } catch (error) {
-        console.error('Error loading collections:', error);
-        Alert.alert('Error', 'No se pudo cargar las colecciones.');
-      }
-    };
-
     loadCollections();
   }, [user]);
 
@@ -60,6 +76,8 @@ const CollectionsScreen: React.FC = () => {
       setCollections([...collections, newCollection]);
       setNewCollectionName('');
       setModalVisible(false);
+      const newPrice = await loadCollectionsTotalPrice(newCollectionName);
+      setCollectionPrices({ ...collectionPrices, [newCollectionName]: newPrice });
     } catch (error) {
       console.error('Error adding collection:', error);
       if (axios.isAxiosError(error)) {
@@ -105,8 +123,42 @@ const CollectionsScreen: React.FC = () => {
     collection.collectionname.toLowerCase().includes(searchText.toLowerCase())
   );
 
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadCollections().then(() => setRefreshing(false));
+  };
+
+  const totalValue = Object.values(collectionPrices).reduce((sum, value) => sum + Number(value), 0).toFixed(2);
+  const totalCards = collections.reduce((sum, collection) => sum + collection.collectionlist.length, 0);
+
+  const pieChartData = collections.map(collection => ({
+    name: collection.collectionname,
+    value: collectionPrices[collection.collectionname] || 0,
+    color: collection.color,
+    legendFontColor: "#7F7F7F",
+  }));
+
   return (
     <View style={styles.container}>
+      <View style={styles.header}>
+        <PieChart
+          style = {styles.piechart}
+          data={pieChartData}
+          width={220}
+          height={220}
+          chartConfig={{
+            color: (opacity = 1) => `rgba(26, 255, 146, ${opacity})`,
+          }}
+          accessor="value"
+          backgroundColor="transparent"
+          paddingLeft="50"
+          hasLegend={false}
+        />
+      </View>
+      <View style={styles.textContainer}>
+          <Text style={styles.totalText}>Valor Total: €{totalValue}</Text>
+          <Text style={styles.totalText}>Total de Cartas: {totalCards}</Text>
+        </View>
       <TextInput
         style={styles.searchBar}
         placeholder="Buscar..."
@@ -114,17 +166,42 @@ const CollectionsScreen: React.FC = () => {
         value={searchText}
         onChangeText={setSearchText}
       />
-      <ScrollView style={styles.collectionsContainer}>
+      <View> 
+      <ScrollView
+        style={styles.scrollView}
+        ref={scrollViewRef}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        onScroll={({ nativeEvent }) => {
+          if (nativeEvent.contentOffset.y <= 0) {
+            loadCollections();
+          }
+        }}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
         {filteredCollections.map((collection) => (
           <TouchableOpacity key={collection.collectionname} style={styles.collectionItem} onPress={() => handleOpenCollection(collection)}>
             <View style={[styles.colorBar, { backgroundColor: collection.color }]} />
-            <Text style={styles.collectionName}>{collection.collectionname}</Text>
+            <View style={styles.collectionTextContainer}>
+              <Text style={styles.collectionName}>{collection.collectionname}</Text>
+              <View style={styles.cardCountContainer}>
+                <MaterialCommunityIcons name="cards" size={24} color="white" />
+                <Text style={styles.cardCount}>Cartas: {collection.collectionlist.length}</Text>
+              </View>
+              <View style={styles.moneyCountContainer}>
+                <FontAwesome5 name="coins" size={15} color="white" />
+                <Text style={styles.moneyCount}>Valor: €{collectionPrices[collection.collectionname] !== undefined ? Number(collectionPrices[collection.collectionname]).toFixed(2) : 'Cargando...'}</Text>
+              </View>
+            </View>
             <TouchableOpacity onPress={() => confirmDeleteCollection(collection)}>
               <MaterialIcons name="delete" size={24} color="#fff" />
             </TouchableOpacity>
           </TouchableOpacity>
         ))}
       </ScrollView>
+      </View>
       <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
         <Text style={styles.addButtonText}>Agregar Colección</Text>
       </TouchableOpacity>
@@ -180,7 +257,30 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.GreyNeutral,
     padding: 16,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  textContainer: {
+    alignItems: 'center',
+  },
+
+  piechart: {
+    marginLeft:80
+  },
+  scrollView:{
+    height:259,
+    marginBottom:100
+  },
+  totalText: {
+    fontSize: 18,
+    color: '#fff',
+    textAlign: 'center',
+  },
   searchBar: {
+    marginTop:50,
     height: 40,
     borderColor: '#555',
     borderWidth: 1,
@@ -188,9 +288,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     color: '#fff',
     marginBottom: 16,
-  },
-  collectionsContainer: {
-    maxHeight: 250,
   },
   collectionItem: {
     flexDirection: 'row',
@@ -200,15 +297,38 @@ const styles = StyleSheet.create({
     backgroundColor: '#333',
     marginBottom: 8,
   },
+  collectionTextContainer: {
+    flex: 1,
+  },
   collectionName: {
     color: '#fff',
     fontSize: 14,
-    flex: 1,
+  },
+  cardCountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  moneyCountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    marginTop: 4,
+    marginLeft: 10
+  },
+  cardCount: {
+    color: '#fff',
+    fontSize: 12,
+    marginLeft: 4,
+  },
+  moneyCount: {
+    color: '#fff',
+    fontSize: 12,
+    marginLeft: 4,
   },
   colorBar: {
     width: 20,
     height: '100%',
-    borderRadius: 5,
+    borderRadius: 10,
     marginRight: 10,
   },
   addButton: {
@@ -256,7 +376,7 @@ const styles = StyleSheet.create({
   },
   modalButtonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     width: '100%',
   },
   modalButton: {

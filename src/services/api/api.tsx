@@ -2,6 +2,7 @@ import axios, { AxiosResponse } from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Collection } from '../../types/collectionsTypes';
 import { Card } from '../../types/cardsType';
+import { Deck } from '../../types/decksTypes';
 
 const API_BASE_URL = 'http://192.168.1.42:8082';
 
@@ -107,13 +108,23 @@ export const loginUser = async (username: string, password: string) => {
   }
 };
 
-export const getDecksFromUser = async (username:string) => {
+export const getDecksFromUser = async (username: string): Promise<Deck[]> => {
   try {
     const response = await axios.get(`${API_BASE_URL}/decks/user/${username}`);
     console.log(response.data);
     return response.data; 
   } catch (error) {
     console.error('Error fetching user decks:', error);
+    throw error;
+  }
+};
+
+export const fetchAllDecks = async (): Promise<Deck[]> => {
+  try {
+    const response: AxiosResponse<Deck[]> = await axios.get(`${API_BASE_URL}/decks`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching all decks:', error);
     throw error;
   }
 };
@@ -162,7 +173,7 @@ export const addCollection = async (collection: Collection) => {
   }
 };
 
-interface RemoveColectionRequest {
+interface RemoveCollectionRequest {
   deckname: string;
   user: string;
 }
@@ -170,7 +181,7 @@ interface RemoveColectionRequest {
 export const deleteCollection = async (deckname: string, user: string) => {
   try {
     const response = await axios.delete(`${API_BASE_URL}/collections/delete`, {
-      data: { deckname, user } as RemoveColectionRequest
+      data: { deckname, user } as RemoveCollectionRequest
     });
     return response.data;
   } catch (error) {
@@ -195,16 +206,78 @@ interface CardRemoveCardRequest {
   deckname: string;
   user: string;
   cardName: string;
-  
 }
 
-export const removeCardFromDeck = async (deckname: string, user: string, cardName: string) => {
+export const removeCardFromCollection = async (deckname: string, user: string, cardName: string) => {
   try {
     const response = await axios.delete(`${API_BASE_URL}/collections/removeCard`, {
-      data: { deckname, user , cardName } as CardRemoveCardRequest,
+      data: { deckname, user, cardName } as CardRemoveCardRequest,
       headers: {
         'Content-Type': 'application/json'
       }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error removing card from deck:', error);
+    throw error;
+  }
+};
+
+export const fetchDecks = async (user: string): Promise<Deck[]> => {
+  try {
+    const response: AxiosResponse<Deck[]> = await axios.get(`${API_BASE_URL}/decks/user/${user}`);
+    return response.data;
+  } catch (error) {
+    console.error('Fetch decks error:', error);
+    throw error;
+  }
+};
+
+export const addDeck = async (deck: Deck) => {
+  try {
+    const response = await axios.post(`${API_BASE_URL}/decks`, deck);
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 409) {
+      throw new Error('El mazo con el mismo nombre ya existe para este usuario');
+    } else {
+      console.error('Add deck error:', error);
+      throw error;
+    }
+  }
+};
+
+export const deleteDeck = async (deckname: string, user: string) => {
+  try {
+    const response = await axios.delete(`${API_BASE_URL}/decks/delete`, {
+      data: { deckname, user },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Delete deck error:', error);
+    throw error;
+  }
+};
+
+export const fetchDeckCards = async (user: string, deckName: string): Promise<Card[]> => {
+  try {
+    const response: AxiosResponse<Card[]> = await axios.get(`${API_BASE_URL}/decks/cards`, {
+      params: { user, deckName },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Fetch deck cards error:', error);
+    throw error;
+  }
+};
+
+export const removeCardFromDeck = async (deckname: string, user: string, cardName: string) => {
+  try {
+    const response = await axios.delete(`${API_BASE_URL}/decks/removeCard`, {
+      data: { deckname, user, cardName },
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
     return response.data;
   } catch (error) {

@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, TextInput, ScrollView, Dimensions, TouchableOpacity, Button, Alert, Image } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, View, Text, TextInput, ScrollView, TouchableOpacity, Alert, RefreshControl } from 'react-native';
 import Modal from 'react-native-modal';
 import Colors from '../styles/colors';
-import { MaterialIcons } from '@expo/vector-icons';
-
-const screenWidth = Dimensions.get('window').width;
+import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useAuth } from '../components/context/AuthContext';
+import { fetchDecks, addDeck, deleteDeck, fetchAllDecks } from '../services/api/api';
+import DeckModal from '../components/DecksModal';
+import { Deck } from '../types/decksTypes';
 
 const getRandomColor = () => {
   const letters = '0123456789ABCDEF';
@@ -16,88 +18,101 @@ const getRandomColor = () => {
 };
 
 const DecksScreen: React.FC = () => {
-  const [communityDecks, setCommunityDecks] = useState([
-    { name: 'Slicer Deck', count: 100, colors: [require('../../assets/red.png')] },
-    { name: 'Cheap Commander', count: 100, colors: [require('../../assets/green.png')] },
-    { name: 'Meren Ketenge', count: 100, colors: [require('../../assets/green.png'), require('../../assets/black.png')] },
-    { name: 'Codie de Codex', count: 100, colors: [require('../../assets/colorless.png')] },
-    { name: 'Yugioh is so bad...', count: 100, colors: [
-      require('../../assets/green.png'),
-      require('../../assets/white.png'),
-      require('../../assets/blue.png'),
-      require('../../assets/black.png'),
-      require('../../assets/red.png'),
-      require('../../assets/colorless.png')
-    ] },
-  ]);
-
-  const [myDecks, setMyDecks] = useState([
-    { name: 'Winota Deck', count: 100, colors: [require('../../assets/red.png'), require('../../assets/white.png')] },
-    { name: 'Kinnan Deck', count: 100, colors: [require('../../assets/green.png')] },
-    { name: 'Volo Deck', count: 100, colors: [require('../../assets/blue.png'), require('../../assets/green.png')] },
-  ]);
-
+  const { user } = useAuth();
+  const [allDecks, setAllDecks] = useState<Deck[]>([]);
+  const [userDecks, setUserDecks] = useState<Deck[]>([]);
   const [newDeckName, setNewDeckName] = useState('');
-  const [newDeckCount, setNewDeckCount] = useState('');
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [newCommanderName, setNewCommanderName] = useState('');
   const [isModalVisible, setModalVisible] = useState(false);
   const [isConfirmModalVisible, setConfirmModalVisible] = useState(false);
-  const [deckToDelete, setDeckToDelete] = useState<string | null>(null);
+  const [deckToDelete, setDeckToDelete] = useState<Deck | null>(null);
   const [searchText, setSearchText] = useState('');
+  const [selectedDeck, setSelectedDeck] = useState<Deck | null>(null);
+  const [isUserDeck, setIsUserDeck] = useState<boolean>(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
 
-  const colors = [
-    { name: 'green', image: require('../../assets/green.png') },
-    { name: 'white', image: require('../../assets/white.png') },
-    { name: 'blue', image: require('../../assets/blue.png') },
-    { name: 'black', image: require('../../assets/black.png') },
-    { name: 'red', image: require('../../assets/red.png') },
-    { name: 'colorless', image: require('../../assets/colorless.png') },
-  ];
-
-  const toggleColor = (color: string) => {
-    setSelectedColors((prev) =>
-      prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color]
-    );
-  };
-
-  const confirmDeleteDeck = (name: string) => {
-    setDeckToDelete(name);
-    setConfirmModalVisible(true);
-  };
-
-  const deleteDeck = () => {
-    if (deckToDelete) {
-      setMyDecks(myDecks.filter(deck => deck.name !== deckToDelete));
-      setConfirmModalVisible(false);
-      setDeckToDelete(null);
+  const loadDecks = async () => {
+    try {
+      const allDecks = await fetchAllDecks();
+      const userDecks = await fetchDecks(user.username);
+      setAllDecks(allDecks);
+      setUserDecks(userDecks);
+    } catch (error) {
+      console.error('Error loading decks:', error);
+      Alert.alert('Error', 'No se pudo cargar los mazos.');
     }
   };
 
-  const filteredCommunityDecks = communityDecks.filter(deck =>
-    deck.name.toLowerCase().includes(searchText.toLowerCase())
-  );
+  useEffect(() => {
+    loadDecks();
+  }, [user]);
 
-  const filteredMyDecks = myDecks.filter(deck =>
-    deck.name.toLowerCase().includes(searchText.toLowerCase())
-  );
-
-  const addDeck = () => {
-    if (!newDeckName || !newDeckCount) {
+  const handleAddDeck = async () => {
+    if (!newDeckName || !newCommanderName) {
       Alert.alert('Error', 'Por favor, complete todos los campos');
       return;
     }
 
-    const newDeck = {
-      name: newDeckName,
-      count: parseInt(newDeckCount),
-      colors: selectedColors.map(color => colors.find(c => c.name === color)?.image || getRandomColor()),
+    const newDeck: Deck = {
+      deckname: newDeckName,
+      color: getRandomColor(),
+      user: user.username,
+      decklist: [],
+      commander: newCommanderName,
     };
 
-    setMyDecks([...myDecks, newDeck]);
-    setNewDeckName('');
-    setNewDeckCount('');
-    setSelectedColors([]);
-    setModalVisible(false);
+    try {
+      await addDeck(newDeck);
+      setUserDecks([...userDecks, newDeck]);
+      setNewDeckName('');
+      setNewCommanderName('');
+      setModalVisible(false);
+    } catch (error) {
+      console.error('Error adding deck:', error);
+      Alert.alert('Error', 'No se pudo agregar el mazo. Verifique que el nombre del comandante sea correcto.');
+    }
+  };
+
+  const confirmDeleteDeck = (deck: Deck) => {
+    setDeckToDelete(deck);
+    setConfirmModalVisible(true);
+  };
+
+  const handleDeleteDeck = async () => {
+    if (deckToDelete) {
+      try {
+        await deleteDeck(deckToDelete.deckname, deckToDelete.user);
+        setUserDecks(userDecks.filter(deck => deck.deckname !== deckToDelete.deckname || deck.user !== deckToDelete.user));
+        setConfirmModalVisible(false);
+        setDeckToDelete(null);
+      } catch (error) {
+        console.error('Error deleting deck:', error);
+        Alert.alert('Error', 'No se pudo eliminar el mazo');
+      }
+    }
+  };
+
+  const handleOpenDeck = (deck: Deck, isUserDeck: boolean) => {
+    setSelectedDeck(deck);
+    setIsUserDeck(isUserDeck);
+  };
+
+  const handleCloseDeck = () => {
+    setSelectedDeck(null);
+  };
+
+  const filteredAllDecks = allDecks.filter(deck =>
+    deck.deckname.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  const filteredUserDecks = userDecks.filter(deck =>
+    deck.deckname.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    loadDecks().then(() => setRefreshing(false));
   };
 
   return (
@@ -109,52 +124,71 @@ const DecksScreen: React.FC = () => {
         value={searchText}
         onChangeText={setSearchText}
       />
-      <Text style={styles.title}>Mazos Comunidad</Text>
-      <ScrollView style={styles.deckContainer}>
-        {filteredCommunityDecks.map(deck => (
-          <TouchableOpacity key={deck.name} onPress={() => {/* Navigate to preview */}}>
-            <View style={styles.deckItem}>
-              <View style={styles.deckDetails}>
-                <Text style={styles.deckName}>{deck.name}</Text>
-                <Text style={styles.deckCount}>{deck.count} Cartas</Text>
-              </View>
-              <View style={styles.colorImagesContainer}>
-                {deck.colors.map((color, index) => (
-                  <Image key={index} source={color} style={styles.colorImage} />
-                ))}
+      <Text style={styles.sectionTitle}>Mazos de la comunidad</Text>
+      <ScrollView
+        style={styles.scrollView}
+        ref={scrollViewRef}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        onScroll={({ nativeEvent }) => {
+          if (nativeEvent.contentOffset.y <= 0) {
+            loadDecks();
+          }
+        }}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
+        {filteredAllDecks.map((deck) => (
+          <TouchableOpacity key={deck.deckname} style={styles.deckItem} onPress={() => handleOpenDeck(deck, false)}>
+            <View style={[styles.colorBar, { backgroundColor: deck.color }]} />
+            <View style={styles.deckTextContainer}>
+              <Text style={styles.deckName}>{deck.deckname}</Text>
+              <Text style={styles.deckCommander}>Comandante: {deck.commander}</Text>
+              <View style={styles.cardCountContainer}>
+                <MaterialCommunityIcons name="cards" size={24} color="white" />
+                <Text style={styles.cardCount}>Cartas: {deck.decklist.length + 1}</Text>
               </View>
             </View>
           </TouchableOpacity>
         ))}
       </ScrollView>
-
-      <Text style={styles.title}>Tus mazos</Text>
-      <ScrollView style={styles.deckContainer}>
-        {filteredMyDecks.map(deck => (
-          <TouchableOpacity key={deck.name} onPress={() => {/* Navigate to preview */}}>
-            <View style={styles.deckItem}>
-              <View style={styles.deckDetails}>
-                <Text style={styles.deckName}>{deck.name}</Text>
-                <Text style={styles.deckCount}>{deck.count} Cartas</Text>
+      <Text style={styles.sectionTitle}>Mis Mazos</Text>
+      <ScrollView
+        style={styles.scrollView}
+        ref={scrollViewRef}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        onScroll={({ nativeEvent }) => {
+          if (nativeEvent.contentOffset.y <= 0) {
+            loadDecks();
+          }
+        }}
+        scrollEventThrottle={16}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
+        {filteredUserDecks.map((deck) => (
+          <TouchableOpacity key={deck.deckname} style={styles.deckItem} onPress={() => handleOpenDeck(deck, true)}>
+            <View style={[styles.colorBar, { backgroundColor: deck.color }]} />
+            <View style={styles.deckTextContainer}>
+              <Text style={styles.deckName}>{deck.deckname}</Text>
+              <Text style={styles.deckCommander}>Comandante: {deck.commander}</Text>
+              <View style={styles.cardCountContainer}>
+                <MaterialCommunityIcons name="cards" size={24} color="white" />
+                <Text style={styles.cardCount}>Cartas: {deck.decklist.length + 1}</Text>
               </View>
-              <View style={styles.colorImagesContainer}>
-                {deck.colors.map((color, index) => (
-                  <Image key={index} source={color} style={styles.colorImage} />
-                ))}
-              </View>
-              <TouchableOpacity onPress={() => confirmDeleteDeck(deck.name)}>
-                <MaterialIcons name="delete" size={20} color="#ff0000" style={styles.iconButton} />
-              </TouchableOpacity>
             </View>
+            <TouchableOpacity onPress={() => confirmDeleteDeck(deck)}>
+              <MaterialIcons name="delete" size={24} color="#fff" />
+            </TouchableOpacity>
           </TouchableOpacity>
         ))}
       </ScrollView>
-
       <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
         <Text style={styles.addButtonText}>Agregar Mazo</Text>
       </TouchableOpacity>
-
-      <Modal isVisible={isModalVisible}>
+      <Modal isVisible={isModalVisible} onBackdropPress={() => setModalVisible(false)}>
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Agregar Nuevo Mazo</Text>
           <TextInput
@@ -166,51 +200,45 @@ const DecksScreen: React.FC = () => {
           />
           <TextInput
             style={styles.input}
-            placeholder="Cantidad de cartas"
+            placeholder="Nombre del comandante"
             placeholderTextColor="#777"
-            value={newDeckCount}
-            onChangeText={setNewDeckCount}
-            keyboardType="numeric"
+            value={newCommanderName}
+            onChangeText={setNewCommanderName}
           />
-          <View style={styles.colorFilter}>
-            {colors.map((color) => (
-              <TouchableOpacity
-                key={color.name}
-                onPress={() => toggleColor(color.name)}
-                style={[
-                  styles.colorButton,
-                  selectedColors.includes(color.name) && styles.selectedColorButton,
-                ]}
-              >
-                <Image source={color.image} style={styles.colorImage} />
-              </TouchableOpacity>
-            ))}
-          </View>
           <View style={styles.modalButtonContainer}>
-            <View style={styles.modalButton}>
-              <Button title="Agregar" onPress={addDeck} />
-            </View>
-            <View style={styles.modalButton}>
-              <Button title="Cancelar" onPress={() => setModalVisible(false)} color="red" />
-            </View>
+            <TouchableOpacity style={styles.modalButton} onPress={handleAddDeck}>
+              <Text style={styles.modalButtonText}>Agregar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setModalVisible(false)}>
+              <Text style={styles.modalButtonText}>Cancelar</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
-
-      <Modal isVisible={isConfirmModalVisible}>
+      <Modal isVisible={isConfirmModalVisible} onBackdropPress={() => setConfirmModalVisible(false)}>
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Confirmar Eliminación</Text>
-          <Text style={styles.confirmText}>¿Estás seguro de que deseas eliminar este mazo?</Text>
+          <Text style={styles.modalText}>¿Estás seguro de que deseas eliminar este mazo?</Text>
           <View style={styles.modalButtonContainer}>
-            <View style={styles.modalButton}>
-              <Button title="Sí" onPress={deleteDeck}/>
-            </View>
-            <View style={styles.modalButton}>
-              <Button title="No" onPress={() => setConfirmModalVisible(false)} color="red" />
-            </View>
+            <TouchableOpacity style={styles.modalButton} onPress={handleDeleteDeck}>
+              <Text style={styles.modalButtonText}>Sí</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setConfirmModalVisible(false)}>
+              <Text style={styles.modalButtonText}>No</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
+      {selectedDeck && (
+        <DeckModal
+          visible={!!selectedDeck}
+          onClose={handleCloseDeck}
+          deckName={selectedDeck.deckname}
+          commander={selectedDeck.commander}
+          user={selectedDeck.user}
+          isUserDeck={isUserDeck}
+        />
+      )}
     </View>
   );
 };
@@ -230,15 +258,8 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 16,
   },
-  title: {
-    color: Colors.Gold,
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  deckContainer: {
-    marginBottom: 16,
-    maxHeight: 250,
+  scrollView: {
+    height: 259,
   },
   deckItem: {
     flexDirection: 'row',
@@ -248,45 +269,31 @@ const styles = StyleSheet.create({
     backgroundColor: '#333',
     marginBottom: 8,
   },
-  deckDetails: {
+  deckTextContainer: {
     flex: 1,
   },
   deckName: {
     color: '#fff',
     fontSize: 14,
   },
-  deckCount: {
-    color: '#aaa',
+  deckCommander: {
+    color: '#fff',
     fontSize: 12,
   },
-  colorImagesContainer: {
+  cardCountContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  colorImage: {
-    width: 30,
-    height: 30,
-    marginHorizontal: 2,
+  cardCount: {
+    color: '#fff',
+    fontSize: 12,
+    marginLeft: 4,
   },
-  colorFilter: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 16,
-  },
-  colorButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 2,
-    borderColor: '#555',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  selectedColorButton: {
-    borderColor: '#fff',
-  },
-  iconButton: {
-    marginLeft: 8,
+  colorBar: {
+    width: 20,
+    height: '100%',
+    borderRadius: 10,
+    marginRight: 10,
   },
   addButton: {
     backgroundColor: Colors.Gold,
@@ -300,44 +307,64 @@ const styles = StyleSheet.create({
     right: 16,
   },
   addButtonText: {
-    color: '#fff',
+    color: 'black',
     fontSize: 16,
     fontWeight: 'bold',
   },
   modalContent: {
-    backgroundColor: '#444',
+    backgroundColor: Colors.GreyNeutral,
     padding: 20,
     borderRadius: 10,
+    alignItems: 'center',
   },
   modalTitle: {
-    color: '#fff',
+    color: Colors.Gold,
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 16,
   },
+  modalText: {
+    color: '#fff',
+    fontSize: 16,
+    marginBottom: 16,
+  },
   input: {
     height: 40,
-    borderColor: '#555',
+    borderColor: Colors.Gold,
     borderWidth: 1,
     borderRadius: 5,
     paddingHorizontal: 10,
     color: '#fff',
-    marginBottom: 8,
+    marginBottom: 16,
+    width: '100%',
   },
   modalButtonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 16,
+    justifyContent: 'flex-end',
+    width: '100%',
   },
   modalButton: {
+    backgroundColor: Colors.Gold,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    alignItems: 'center',
     flex: 1,
     marginHorizontal: 5,
   },
-  confirmText: {
-    color: '#fff',
+  cancelButton: {
+    backgroundColor: 'red',
+  },
+  modalButtonText: {
+    color: 'black',
     fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 16,
+    fontWeight: 'bold',
+  },
+  sectionTitle: {
+    color: Colors.Gold,
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginVertical: 16,
   },
 });
 

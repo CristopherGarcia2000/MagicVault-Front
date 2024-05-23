@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image, ScrollView,
 import Modal from 'react-native-modal';
 import { Ionicons } from '@expo/vector-icons'; // Importar Ionicons
 import Colors from '../styles/colors';
-import { fetchCollectionCards, removeCardFromDeck } from '../services/api/api';
+import { fetchCollectionCards, removeCardFromCollection } from '../services/api/api';
 import { Card } from '../types/cardsType';
 import CardPreview from '../components/cardPreview';
 
@@ -51,7 +51,7 @@ const CollectionModal: React.FC<CollectionModalProps> = ({ visible, onClose, col
     const handleRemoveCard = async () => {
         if (cardToRemove) {
             try {
-                await removeCardFromDeck(collectionName, user, cardToRemove);
+                await removeCardFromCollection(collectionName, user, cardToRemove);
                 setCards(cards.filter(card => card.name !== cardToRemove));
                 setConfirmVisible(false);
             } catch (error) {
