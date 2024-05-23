@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import Colors from '../styles/colors';
 import ManaText from './manaText';
 import { getDecksFromUser, addCardToDeck, getCollectionsFromUser, addCardToCollections } from '../services/api/api';
@@ -37,8 +36,8 @@ const CardPreview: React.FC<CardPreviewProps> = ({ visible, onClose, card }) => 
   const [collections, setCollections] = useState<DeckOrCollection[]>([]);
   const [selectedDeck, setSelectedDeck] = useState<string>('');
   const [selectedCollection, setSelectedCollection] = useState<string>('');
-  const [showDeckPicker, setShowDeckPicker] = useState<boolean>(false);
-  const [showCollectionPicker, setShowCollectionPicker] = useState<boolean>(false);
+  const [showDeckModal, setShowDeckModal] = useState<boolean>(false);
+  const [showCollectionModal, setShowCollectionModal] = useState<boolean>(false);
 
   useEffect(() => {
     if (user?.username) {
@@ -73,7 +72,7 @@ const CardPreview: React.FC<CardPreviewProps> = ({ visible, onClose, card }) => 
     try {
       await addCardToDeck(selectedDeck, card?.name ?? '', user.username);
       Alert.alert('Carta añadida', `La carta ${card?.name} ha sido añadida al deck ${selectedDeck}`);
-      setShowDeckPicker(false);
+      setShowDeckModal(false);
       onClose();
     } catch (error) {
       console.error('Error adding card to deck:', error);
@@ -89,7 +88,7 @@ const CardPreview: React.FC<CardPreviewProps> = ({ visible, onClose, card }) => 
     try {
       await addCardToCollections(selectedCollection, card?.name ?? '', user.username);
       Alert.alert('Carta añadida', `La carta ${card?.name} ha sido añadida a la colección ${selectedCollection}`);
-      setShowCollectionPicker(false);
+      setShowCollectionModal(false);
       onClose();
     } catch (error) {
       console.error('Error adding card to collection:', error);
@@ -127,51 +126,79 @@ const CardPreview: React.FC<CardPreviewProps> = ({ visible, onClose, card }) => 
               <ManaText text={card.oracle_text} />
             </ScrollView>
           </View>
-          <TouchableOpacity onPress={() => setShowDeckPicker(true)} style={styles.addButton}>
-            <Text style={styles.addButtonText}>Añadir a un deck</Text>
-          </TouchableOpacity>
-          {showDeckPicker && (
-            <>
-              <Picker
-                selectedValue={selectedDeck}
-                onValueChange={(itemValue) => setSelectedDeck(itemValue)}
-                style={styles.picker}
-              >
-                <Picker.Item label="Seleccione deck" value="" />
-                {decks.map((deck) => (
-                  <Picker.Item key={deck.id.timestamp} label={deck.deckname!} value={deck.deckname!} />
-                ))}
-              </Picker>
-              <TouchableOpacity onPress={handleAddToDeck} style={styles.confirmButton}>
-                <Text style={styles.confirmButtonText}>Confirmar</Text>
-              </TouchableOpacity>
-            </>
-          )}
-          <TouchableOpacity onPress={() => setShowCollectionPicker(true)} style={styles.addButton}>
-            <Text style={styles.addButtonText}>Añadir a una colección</Text>
-          </TouchableOpacity>
-          {showCollectionPicker && (
-            <>
-              <Picker
-                selectedValue={selectedCollection}
-                onValueChange={(itemValue) => setSelectedCollection(itemValue)}
-                style={styles.picker}
-              >
-                <Picker.Item label="Seleccione Colección" value="" />
-                {collections.map((collection) => (
-                  <Picker.Item key={collection.id.timestamp} label={collection.collectionname!} value={collection.collectionname!} />
-                ))}
-              </Picker>
-              <TouchableOpacity onPress={handleAddToCollection} style={styles.confirmButton}>
-                <Text style={styles.confirmButtonText}>Confirmar</Text>
-              </TouchableOpacity>
-            </>
-          )}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity onPress={() => setShowDeckModal(true)} style={styles.addButton}>
+              <Text style={styles.addButtonText}>Añadir a un deck</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowCollectionModal(true)} style={styles.addButton}>
+              <Text style={styles.addButtonText}>Añadir a una colección</Text>
+            </TouchableOpacity>
+          </View>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Text style={styles.closeButtonText}>Cerrar</Text>
           </TouchableOpacity>
         </View>
       </View>
+
+      <Modal
+        visible={showDeckModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowDeckModal(false)}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.pickerModal}>
+            <Text>Seleccione un deck</Text>
+            <ScrollView style={styles.optionsContainer}>
+              {decks.map((deck) => (
+                <TouchableOpacity
+                  key={deck.id.timestamp}
+                  style={styles.optionButton}
+                  onPress={() => setSelectedDeck(deck.deckname!)}
+                >
+                  <Text style={styles.optionButtonText}>{deck.deckname}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity onPress={handleAddToDeck} style={styles.confirmButton}>
+              <Text style={styles.confirmButtonText}>Confirmar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowDeckModal(false)} style={styles.cancelButton}>
+              <Text style={styles.cancelButtonText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showCollectionModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowCollectionModal(false)}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.pickerModal}>
+            <Text>Seleccione una colección</Text>
+            <ScrollView style={styles.optionsContainer}>
+              {collections.map((collection) => (
+                <TouchableOpacity
+                  key={collection.id.timestamp}
+                  style={styles.optionButton}
+                  onPress={() => setSelectedCollection(collection.collectionname!)}
+                >
+                  <Text style={styles.optionButtonText}>{collection.collectionname}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity onPress={handleAddToCollection} style={styles.confirmButton}>
+              <Text style={styles.confirmButtonText}>Confirmar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowCollectionModal(false)} style={styles.cancelButton}>
+              <Text style={styles.cancelButtonText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </Modal>
   );
 };
@@ -204,6 +231,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
     marginBottom: 10,
+    textAlign: 'center',
   },
   typeAndCost: {
     justifyContent: 'space-between',
@@ -215,10 +243,6 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     color: '#fff',
   },
-  manaCostContainer: {
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
   powerToughness: {
     fontSize: 18,
     fontWeight: 'bold',
@@ -229,35 +253,82 @@ const styles = StyleSheet.create({
   textContainer: {
     maxHeight: 150,
   },
-  closeButton: {
-    padding: 10,
-    backgroundColor: Colors.Gold,
-    alignItems: 'center',
-  },
-  closeButtonText: {
-    color: 'white',
-    fontSize: 16,
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginVertical: 10,
   },
   addButton: {
     padding: 10,
     backgroundColor: Colors.Gold,
     alignItems: 'center',
+    flex: 1,
+    marginHorizontal: 5,
+    borderRadius: 5,
+    justifyContent:'center'
   },
   addButtonText: {
-    color: 'white',
+    color: 'black',
     fontSize: 16,
+    fontWeight: 'bold',
+    textAlign:'center'
   },
-  picker: {
-    height: 50,
+  closeButton: {
+    padding: 10,
+    backgroundColor: Colors.Gold,
+    alignItems: 'center',
+    borderRadius: 5,
+    margin: 10,
+  },
+  closeButtonText: {
+    fontSize: 16,
+    color:'black',
+    fontWeight: 'bold',
+    textAlign:'center'
+  },
+  pickerModal: {
+    width: '80%',
+    backgroundColor: '#333',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  optionsContainer: {
     width: '100%',
-    backgroundColor: '#fff',
+    marginVertical: 10,
+  },
+  optionButton: {
+    padding: 10,
+    backgroundColor: '#444',
+    borderRadius: 5,
+    marginVertical: 5,
+    alignItems: 'center',
+  },
+  optionButtonText: {
+    color: '#fff',
+    fontSize: 16,
   },
   confirmButton: {
     padding: 10,
     backgroundColor: Colors.Gold,
     alignItems: 'center',
+    marginVertical: 5,
+    width: '80%',
+    borderRadius: 5,
   },
   confirmButtonText: {
+    color: 'white',
+    fontSize: 16,
+  },
+  cancelButton: {
+    padding: 10,
+    backgroundColor: 'red',
+    alignItems: 'center',
+    marginVertical: 5,
+    width: '80%',
+    borderRadius: 5,
+  },
+  cancelButtonText: {
     color: 'white',
     fontSize: 16,
   },

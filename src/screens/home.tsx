@@ -157,14 +157,20 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   noImageText: {
-    color: '#fff',
+    color: 'white',
     fontSize: 16,
     marginBottom: 20,
     textAlign: 'center',
+    justifyContent:'center'
   },
   visitedCardsContainer: {
+    padding:16,
     marginTop: 20,
     alignItems: 'center',
+    justifyContent:'center',
+    backgroundColor:colors.GreyDark,
+    borderRadius:15,
+    width:360
   },
   visitedCardsTitle: {
     fontSize: 18,
