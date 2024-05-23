@@ -131,12 +131,6 @@ const DecksScreen: React.FC = () => {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        onScroll={({ nativeEvent }) => {
-          if (nativeEvent.contentOffset.y <= 0) {
-            loadDecks();
-          }
-        }}
-        scrollEventThrottle={16}
         contentContainerStyle={{ paddingBottom: 100 }}
       >
         {filteredAllDecks.map((deck) => (
@@ -160,12 +154,6 @@ const DecksScreen: React.FC = () => {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        onScroll={({ nativeEvent }) => {
-          if (nativeEvent.contentOffset.y <= 0) {
-            loadDecks();
-          }
-        }}
-        scrollEventThrottle={16}
         contentContainerStyle={{ paddingBottom: 100 }}
       >
         {filteredUserDecks.map((deck) => (
@@ -259,7 +247,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   scrollView: {
-    height: 259,
+    maxHeight:253,
   },
   deckItem: {
     flexDirection: 'row',
@@ -300,9 +288,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 5,
     alignItems: 'center',
-    marginVertical: 16,
+    marginVertical: 56,
     position: 'absolute',
-    bottom: 50,
+    bottom: 10,
     left: 16,
     right: 16,
   },
@@ -364,7 +352,7 @@ const styles = StyleSheet.create({
     color: Colors.Gold,
     fontSize: 18,
     fontWeight: 'bold',
-    marginVertical: 16,
+    marginVertical: 14,
   },
 });
 

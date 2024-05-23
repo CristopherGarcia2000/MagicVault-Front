@@ -1,10 +1,11 @@
-import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, TouchableOpacity, Modal, Text } from 'react-native';
 import Colors from '../styles/colors';
 import { useNavigation } from '@react-navigation/native';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSelectedScreen } from './context/selectedScreenContext';
+import { useAuth } from './context/AuthContext';
 
 type RootStackParamList = {
   Home: undefined;
@@ -20,10 +21,30 @@ type RootStackParamList = {
 const Footer = () => {
   const navigation = useNavigation<DrawerNavigationProp<RootStackParamList>>();
   const { selectedScreen, setSelectedScreen } = useSelectedScreen();
+  const { isAuthenticated } = useAuth();
+  const [modalVisible, setModalVisible] = useState(false);
 
   const handlePress = (screen: keyof RootStackParamList) => {
+    if (!isAuthenticated && (screen === 'Decks' || screen === 'Collections')) {
+      setModalVisible(true);
+      return;
+    }
     setSelectedScreen(screen);
     navigation.navigate(screen);
+  };
+
+  const closeModal = () => {
+    setModalVisible(false);
+  };
+
+  const handleLogin = () => {
+    setModalVisible(false);
+    navigation.navigate('Login');
+  };
+
+  const handleRegister = () => {
+    setModalVisible(false);
+    navigation.navigate('Register');
   };
 
   return (
@@ -67,6 +88,31 @@ const Footer = () => {
       >
         <MaterialIcons name="collections-bookmark" size={24} color="white" />
       </TouchableOpacity>
+
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={closeModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>Acceso restringido</Text>
+            <Text style={styles.modalMessage}>Por favor, inicia sesión o regístrate para acceder a esta sección.</Text>
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity style={styles.modalButton} onPress={handleLogin}>
+                <Text style={styles.modalButtonText}>Iniciar Sesión</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalButton} onPress={handleRegister}>
+                <Text style={styles.modalButtonText}>Registrarse</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.modalButton, styles.closeButton]} onPress={closeModal}>
+                <Text style={styles.modalButtonText}>Cerrar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -81,18 +127,61 @@ const styles = StyleSheet.create({
     borderTopColor: '#ccc',
     position: 'absolute',
     bottom: 0,
-    width: '100%'
+    width: '100%',
   },
   buttonBackground: {
     backgroundColor: 'transparent',
     borderRadius: 20,
     width: 80,
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   selectedButton: {
     backgroundColor: Colors.Gold,
-  }
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: '80%',
+    backgroundColor: Colors.GreyNeutral,
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: Colors.Gold,
+    marginBottom: 10,
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalButtonContainer: {
+    width: '100%',
+  },
+  modalButton: {
+    backgroundColor: Colors.Gold,
+    paddingVertical: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    marginVertical: 5,
+  },
+  modalButtonText: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  closeButton: {
+    backgroundColor: 'red',
+  },
 });
 
 export default Footer;

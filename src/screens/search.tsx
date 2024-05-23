@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ActivityIndicator, Image, FlatList, Dimensions } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import { StyleSheet, View, Text, TextInput, TouchableOpacity, ActivityIndicator, Image, FlatList, Dimensions, Modal, ScrollView } from 'react-native';
 import Colors from '../styles/colors';
 import { fetchExpansions, searchCards, CardSearchFilter } from '../services/api/api';
 import CardPreview from '../components/cardPreview';
 import ManaText from '../components/manaText';
 import { Card } from '../types/cardsType';
-import { useAuth } from '../components/context/AuthContext'; // Importar el contexto de autenticación
+import { useAuth } from '../components/context/AuthContext';
 
 const SearchScreen: React.FC = () => {
-  const { addVisitedCard } = useAuth(); // Obtener la función para agregar una carta visitada desde el contexto
+  const { addVisitedCard } = useAuth();
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [selectedType, setSelectedType] = useState<string>('');
   const [selectedExpansion, setSelectedExpansion] = useState<string>('');
@@ -19,6 +18,9 @@ const SearchScreen: React.FC = () => {
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [previewVisible, setPreviewVisible] = useState<boolean>(false);
   const [cardName, setCardName] = useState<string>('');
+  const [noResultsModalVisible, setNoResultsModalVisible] = useState<boolean>(false);
+  const [typeModalVisible, setTypeModalVisible] = useState<boolean>(false);
+  const [expansionModalVisible, setExpansionModalVisible] = useState<boolean>(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,7 +62,16 @@ const SearchScreen: React.FC = () => {
       }
 
       const searchResults = await searchCards(filter);
-      setResults(searchResults.data);
+      if (searchResults && Array.isArray(searchResults.data)) {
+        setResults(searchResults.data);
+
+        if (searchResults.data.length === 0) {
+          setNoResultsModalVisible(true);
+        }
+      } else {
+        setResults([]);
+        setNoResultsModalVisible(true);
+      }
     } catch (error) {
       console.error('Error searching cards:', error);
     } finally {
@@ -69,7 +80,7 @@ const SearchScreen: React.FC = () => {
   };
 
   const handleCardPress = (card: Card) => {
-    addVisitedCard(card); // Agregar la carta visitada al contexto de autenticación
+    addVisitedCard(card);
     setSelectedCard(card);
     setPreviewVisible(true);
   };
@@ -112,26 +123,12 @@ const SearchScreen: React.FC = () => {
           ))}
         </View>
         <View style={styles.pickerContainer}>
-          <Picker
-            selectedValue={selectedType}
-            onValueChange={(itemValue: string) => setSelectedType(itemValue)}
-            style={styles.picker}
-          >
-            <Picker.Item label="Tipos" value="" />
-            {types.map((type) => (
-              <Picker.Item key={type.value} label={type.label} value={type.value} />
-            ))}
-          </Picker>
-          <Picker
-            selectedValue={selectedExpansion}
-            onValueChange={(itemValue: string) => setSelectedExpansion(itemValue)}
-            style={styles.picker}
-          >
-            <Picker.Item label="Expansión" value="" />
-            {expansions.map((expansion) => (
-              <Picker.Item key={expansion.value} label={expansion.label} value={expansion.value} />
-            ))}
-          </Picker>
+          <TouchableOpacity onPress={() => setTypeModalVisible(true)} style={styles.modalOpenButton}>
+            <Text style={styles.modalOpenButtonText}>{selectedType ? types.find(type => type.value === selectedType)?.label : 'Seleccionar Tipo'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setExpansionModalVisible(true)} style={styles.modalOpenButton}>
+            <Text style={styles.modalOpenButtonText}>{selectedExpansion ? expansions.find(exp => exp.value === selectedExpansion)?.label : 'Seleccionar Expansión'}</Text>
+          </TouchableOpacity>
         </View>
       </View>
       <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
@@ -161,9 +158,85 @@ const SearchScreen: React.FC = () => {
           }}
         />
       )}
+      <Modal
+        visible={noResultsModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setNoResultsModalVisible(false)}
+      >
+        <View style={styles.modalBackground}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>No hay resultados</Text>
+            <Text style={styles.modalMessage}>No se encontraron cartas con los criterios de búsqueda especificados.</Text>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setNoResultsModalVisible(false)}
+            >
+              <Text style={styles.modalButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={typeModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setTypeModalVisible(false)}
+      >
+        <View style={styles.modalBackground}>
+          <View style={[styles.modalContainer, { maxHeight: '80%' }]}>
+            <Text style={styles.modalTitle}>Seleccionar Tipo</Text>
+            <ScrollView style={styles.scrollView}>
+              <TouchableOpacity onPress={() => { setSelectedType(''); setTypeModalVisible(false); }}>
+                <Text style={styles.modalItem}>Sin filtro</Text>
+              </TouchableOpacity>
+              {types.map((type) => (
+                <TouchableOpacity key={type.value} onPress={() => { setSelectedType(type.value); setTypeModalVisible(false); }}>
+                  <Text style={styles.modalItem}>{type.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setTypeModalVisible(false)}
+            >
+              <Text style={styles.modalButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        visible={expansionModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setExpansionModalVisible(false)}
+      >
+        <View style={styles.modalBackground}>
+          <View style={[styles.modalContainer, { maxHeight: '80%' }]}>
+            <Text style={styles.modalTitle}>Seleccionar Expansión</Text>
+            <ScrollView style={styles.scrollView}>
+              <TouchableOpacity onPress={() => { setSelectedExpansion(''); setExpansionModalVisible(false); }}>
+                <Text style={styles.modalItem}>Sin filtro</Text>
+              </TouchableOpacity>
+              {expansions.map((expansion) => (
+                <TouchableOpacity key={expansion.value} onPress={() => { setSelectedExpansion(expansion.value); setExpansionModalVisible(false); }}>
+                  <Text style={styles.modalItem}>{expansion.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => setExpansionModalVisible(false)}
+            >
+              <Text style={styles.modalButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
+
 const { width } = Dimensions.get('window');
 const cardWidth = (width - 48) / 2;
 
@@ -233,10 +306,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  picker: {
-    height: 50,
+  modalOpenButton: {
+    backgroundColor: Colors.Gold,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    alignItems: 'center',
     flex: 1,
-    color: '#fff',
+    marginHorizontal: 5,
+    justifyContent:'center'
+  },
+  modalOpenButtonText: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   searchButton: {
     backgroundColor: '#ffcc00',
@@ -291,11 +375,57 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center',
   },
-  loadingContainer: {
+  noResultsText: {
+    color: '#fff',
+    fontSize: 18,
+    textAlign: 'center',
+  },
+  modalBackground: {
     flex: 1,
-    backgroundColor: Colors.GreyNeutral,
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContainer: {
+    backgroundColor: Colors.GreyNeutral,
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    width: '80%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.Gold,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 16,
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalButton: {
+    backgroundColor: Colors.Gold,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    color: '#333',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  modalItem: {
+    fontSize: 16,
+    color: '#fff',
+    paddingVertical: 10,
+    textAlign: 'center',
+  },
+  scrollView: {
+    width: '100%',
   },
 });
 
