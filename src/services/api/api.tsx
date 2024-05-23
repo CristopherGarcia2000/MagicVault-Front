@@ -119,6 +119,7 @@ export const getDecksFromUser = async (username: string): Promise<Deck[]> => {
   }
 };
 
+
 export const fetchAllDecks = async (): Promise<Deck[]> => {
   try {
     const response: AxiosResponse<Deck[]> = await axios.get(`${API_BASE_URL}/decks`);
@@ -129,7 +130,8 @@ export const fetchAllDecks = async (): Promise<Deck[]> => {
   }
 };
 
-interface AddRemoveCardRequest {
+
+interface AddRemoveCardDeckRequest {
   deckname: string;
   cardName: string;
   user: string;
@@ -141,7 +143,35 @@ export const addCardToDeck = async (deckname: string, cardName: string, user: st
       deckname,
       cardName,
       user
-    } as AddRemoveCardRequest);
+    } as AddRemoveCardDeckRequest);
+    return response.data;
+  } catch (error) {
+    console.error('Error adding card to deck:', error);
+    throw error;
+  }
+};
+export const getCollectionsFromUser = async (username:string) => {
+  try {
+    const response = await axios.get(`${API_BASE_URL}/collections/user/${username}`);
+    console.log(response.data)
+    return response.data; 
+  } catch (error) {
+    console.error('Error fetching user decks:', error);
+    throw error;
+  }
+};
+interface AddRemoveCardCollectionRequest {
+  collectionname: string;
+  cardName: string;
+  user: string;
+}
+export const addCardToCollections = async (deckname: string, cardName: string, user: string) => {
+  try {
+    const response = await axios.put(`${API_BASE_URL}/collections/addCard`, {
+      deckname,
+      cardName,
+      user
+    } as AddRemoveCardDeckRequest);
     return response.data;
   } catch (error) {
     console.error('Error adding card to deck:', error);

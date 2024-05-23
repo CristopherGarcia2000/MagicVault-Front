@@ -3,8 +3,8 @@ import { Modal, StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, Ale
 import { Picker } from '@react-native-picker/picker';
 import Colors from '../styles/colors';
 import ManaText from './manaText';
-import { getDecksFromUser, addCardToDeck } from '../services/api/api'; // Asegúrate de que este sea el path correcto
-import { useAuth } from '../components/context/AuthContext'; // Asegúrate de que este sea el path correcto
+import { getDecksFromUser, addCardToDeck, getCollectionsFromUser, addCardToCollections } from '../services/api/api';
+import { useAuth } from '../components/context/AuthContext';
 
 interface Card {
   name: string;
@@ -16,11 +16,13 @@ interface Card {
   toughness?: string;
 }
 
-interface Deck {
-  deckname: string;
+interface DeckOrCollection {
+  deckname?: string;
+  collectionname?: string;
   id: { timestamp: number; date: string };
   user: string;
-  decklist: string[];
+  decklist?: string[];
+  collectionlist?: string[];
 }
 
 interface CardPreviewProps {
@@ -31,13 +33,17 @@ interface CardPreviewProps {
 
 const CardPreview: React.FC<CardPreviewProps> = ({ visible, onClose, card }) => {
   const { user } = useAuth();
-  const [decks, setDecks] = useState<Deck[]>([]);
+  const [decks, setDecks] = useState<DeckOrCollection[]>([]);
+  const [collections, setCollections] = useState<DeckOrCollection[]>([]);
   const [selectedDeck, setSelectedDeck] = useState<string>('');
-  const [showPicker, setShowPicker] = useState<boolean>(false);
+  const [selectedCollection, setSelectedCollection] = useState<string>('');
+  const [showDeckPicker, setShowDeckPicker] = useState<boolean>(false);
+  const [showCollectionPicker, setShowCollectionPicker] = useState<boolean>(false);
 
   useEffect(() => {
     if (user?.username) {
       fetchUserDecks(user.username);
+      fetchUserCollections(user.username);
     }
   }, [user]);
 
@@ -50,6 +56,15 @@ const CardPreview: React.FC<CardPreviewProps> = ({ visible, onClose, card }) => 
     }
   };
 
+  const fetchUserCollections = async (username: string) => {
+    try {
+      const response = await getCollectionsFromUser(username);
+      setCollections(response);
+    } catch (error) {
+      console.error('Error fetching user collections:', error);
+    }
+  };
+
   const handleAddToDeck = async () => {
     if (!selectedDeck) {
       Alert.alert('Selecciona un deck', 'Por favor, selecciona un deck para añadir la carta.');
@@ -58,11 +73,27 @@ const CardPreview: React.FC<CardPreviewProps> = ({ visible, onClose, card }) => 
     try {
       await addCardToDeck(selectedDeck, card?.name ?? '', user.username);
       Alert.alert('Carta añadida', `La carta ${card?.name} ha sido añadida al deck ${selectedDeck}`);
-      setShowPicker(false);
+      setShowDeckPicker(false);
       onClose();
     } catch (error) {
       console.error('Error adding card to deck:', error);
       Alert.alert('Error', 'Hubo un error al añadir la carta al deck.');
+    }
+  };
+
+  const handleAddToCollection = async () => {
+    if (!selectedCollection) {
+      Alert.alert('Selecciona una colección', 'Por favor, selecciona una colección para añadir la carta.');
+      return;
+    }
+    try {
+      await addCardToCollections(selectedCollection, card?.name ?? '', user.username);
+      Alert.alert('Carta añadida', `La carta ${card?.name} ha sido añadida a la colección ${selectedCollection}`);
+      setShowCollectionPicker(false);
+      onClose();
+    } catch (error) {
+      console.error('Error adding card to collection:', error);
+      Alert.alert('Error', 'Hubo un error al añadir la carta a la colección.');
     }
   };
 
@@ -96,21 +127,42 @@ const CardPreview: React.FC<CardPreviewProps> = ({ visible, onClose, card }) => 
               <ManaText text={card.oracle_text} />
             </ScrollView>
           </View>
-          <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.addButton}>
+          <TouchableOpacity onPress={() => setShowDeckPicker(true)} style={styles.addButton}>
             <Text style={styles.addButtonText}>Añadir a un deck</Text>
           </TouchableOpacity>
-          {showPicker && (
+          {showDeckPicker && (
             <>
               <Picker
                 selectedValue={selectedDeck}
                 onValueChange={(itemValue) => setSelectedDeck(itemValue)}
                 style={styles.picker}
               >
+                <Picker.Item label="Seleccione deck" value="" />
                 {decks.map((deck) => (
-                  <Picker.Item key={deck.id.timestamp} label={deck.deckname} value={deck.deckname} />
+                  <Picker.Item key={deck.id.timestamp} label={deck.deckname!} value={deck.deckname!} />
                 ))}
               </Picker>
               <TouchableOpacity onPress={handleAddToDeck} style={styles.confirmButton}>
+                <Text style={styles.confirmButtonText}>Confirmar</Text>
+              </TouchableOpacity>
+            </>
+          )}
+          <TouchableOpacity onPress={() => setShowCollectionPicker(true)} style={styles.addButton}>
+            <Text style={styles.addButtonText}>Añadir a una colección</Text>
+          </TouchableOpacity>
+          {showCollectionPicker && (
+            <>
+              <Picker
+                selectedValue={selectedCollection}
+                onValueChange={(itemValue) => setSelectedCollection(itemValue)}
+                style={styles.picker}
+              >
+                <Picker.Item label="Seleccione Colección" value="" />
+                {collections.map((collection) => (
+                  <Picker.Item key={collection.id.timestamp} label={collection.collectionname!} value={collection.collectionname!} />
+                ))}
+              </Picker>
+              <TouchableOpacity onPress={handleAddToCollection} style={styles.confirmButton}>
                 <Text style={styles.confirmButtonText}>Confirmar</Text>
               </TouchableOpacity>
             </>
