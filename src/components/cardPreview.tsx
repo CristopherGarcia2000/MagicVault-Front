@@ -5,6 +5,7 @@ import ManaText from './manaText';
 import { getDecksFromUser, addCardToDeck, getCollectionsFromUser, addCardToCollections } from '../services/api/api';
 import { useAuth } from '../components/context/AuthContext';
 
+// Define the structure of a Card
 interface Card {
   name: string;
   image_uris?: { png: string };
@@ -15,6 +16,7 @@ interface Card {
   toughness?: string;
 }
 
+// Define the structure of a Deck or Collection
 interface DeckOrCollection {
   deckname?: string;
   collectionname?: string;
@@ -24,46 +26,51 @@ interface DeckOrCollection {
   collectionlist?: string[];
 }
 
+// Define the props for the CardPreview component
 interface CardPreviewProps {
   visible: boolean;
   onClose: () => void;
   card: Card | null;
 }
 
+// CardPreview component to display card details in a modal
 const CardPreview: React.FC<CardPreviewProps> = ({ visible, onClose, card }) => {
-  const { user } = useAuth();
-  const [decks, setDecks] = useState<DeckOrCollection[]>([]);
-  const [collections, setCollections] = useState<DeckOrCollection[]>([]);
-  const [selectedDeck, setSelectedDeck] = useState<string>('');
-  const [selectedCollection, setSelectedCollection] = useState<string>('');
-  const [showDeckModal, setShowDeckModal] = useState<boolean>(false);
-  const [showCollectionModal, setShowCollectionModal] = useState<boolean>(false);
+  const { user } = useAuth(); // Access the authenticated user
+  const [decks, setDecks] = useState<DeckOrCollection[]>([]); // State to store user's decks
+  const [collections, setCollections] = useState<DeckOrCollection[]>([]); // State to store user's collections
+  const [selectedDeck, setSelectedDeck] = useState<string>(''); // State to store the selected deck
+  const [selectedCollection, setSelectedCollection] = useState<string>(''); // State to store the selected collection
+  const [showDeckModal, setShowDeckModal] = useState<boolean>(false); // State to control deck modal visibility
+  const [showCollectionModal, setShowCollectionModal] = useState<boolean>(false); // State to control collection modal visibility
 
   useEffect(() => {
     if (user?.username) {
-      fetchUserDecks(user.username);
-      fetchUserCollections(user.username);
+      fetchUserDecks(user.username); // Fetch user decks when component mounts or user changes
+      fetchUserCollections(user.username); // Fetch user collections when component mounts or user changes
     }
   }, [user]);
 
+  // Fetch the user's decks from the API
   const fetchUserDecks = async (username: string) => {
     try {
       const response = await getDecksFromUser(username);
-      setDecks(response);
+      setDecks(response); // Update the decks state
     } catch (error) {
       console.error('Error fetching user decks:', error);
     }
   };
 
+  // Fetch the user's collections from the API
   const fetchUserCollections = async (username: string) => {
     try {
       const response = await getCollectionsFromUser(username);
-      setCollections(response);
+      setCollections(response); // Update the collections state
     } catch (error) {
       console.error('Error fetching user collections:', error);
     }
   };
 
+  // Handle adding a card to a selected deck
   const handleAddToDeck = async () => {
     if (!selectedDeck) {
       Alert.alert('Selecciona un deck', 'Por favor, selecciona un deck para añadir la carta.');
@@ -72,14 +79,15 @@ const CardPreview: React.FC<CardPreviewProps> = ({ visible, onClose, card }) => 
     try {
       await addCardToDeck(selectedDeck, card?.name ?? '', user.username);
       Alert.alert('Carta añadida', `La carta ${card?.name} ha sido añadida al deck ${selectedDeck}`);
-      setShowDeckModal(false);
-      onClose();
+      setShowDeckModal(false); // Close the deck modal
+      onClose(); // Close the card preview modal
     } catch (error) {
       console.error('Error adding card to deck:', error);
       Alert.alert('Error', 'Hubo un error al añadir la carta al deck.');
     }
   };
 
+  // Handle adding a card to a selected collection
   const handleAddToCollection = async () => {
     if (!selectedCollection) {
       Alert.alert('Selecciona una colección', 'Por favor, selecciona una colección para añadir la carta.');
@@ -88,8 +96,8 @@ const CardPreview: React.FC<CardPreviewProps> = ({ visible, onClose, card }) => 
     try {
       await addCardToCollections(selectedCollection, card?.name ?? '', user.username);
       Alert.alert('Carta añadida', `La carta ${card?.name} ha sido añadida a la colección ${selectedCollection}`);
-      setShowCollectionModal(false);
-      onClose();
+      setShowCollectionModal(false); // Close the collection modal
+      onClose(); // Close the card preview modal
     } catch (error) {
       console.error('Error adding card to collection:', error);
       Alert.alert('Error', 'Hubo un error al añadir la carta a la colección.');
@@ -97,7 +105,7 @@ const CardPreview: React.FC<CardPreviewProps> = ({ visible, onClose, card }) => 
   };
 
   if (!card) {
-    return null;
+    return null; // If no card is provided, do not render the modal
   }
 
   return (
@@ -140,6 +148,7 @@ const CardPreview: React.FC<CardPreviewProps> = ({ visible, onClose, card }) => 
         </View>
       </View>
 
+      {/* Modal for selecting a deck */}
       <Modal
         visible={showDeckModal}
         transparent={true}
@@ -170,6 +179,7 @@ const CardPreview: React.FC<CardPreviewProps> = ({ visible, onClose, card }) => 
         </View>
       </Modal>
 
+      {/* Modal for selecting a collection */}
       <Modal
         visible={showCollectionModal}
         transparent={true}
@@ -265,13 +275,13 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 5,
     borderRadius: 5,
-    justifyContent:'center'
+    justifyContent: 'center',
   },
   addButtonText: {
     color: 'black',
     fontSize: 16,
     fontWeight: 'bold',
-    textAlign:'center'
+    textAlign: 'center',
   },
   closeButton: {
     padding: 10,
@@ -282,9 +292,9 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     fontSize: 16,
-    color:'black',
+    color: 'black',
     fontWeight: 'bold',
-    textAlign:'center'
+    textAlign: 'center',
   },
   pickerModal: {
     width: '80%',

@@ -8,37 +8,34 @@ import { registerUser, loginUser } from '../services/api/api';
 import { useAuth } from '../components/context/AuthContext';
 
 export default function RegisterScreen() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalMessage, setModalMessage] = useState('');
+  const [username, setUsername] = useState(''); // State for managing username input
+  const [password, setPassword] = useState(''); // State for managing password input
+  const [email, setEmail] = useState(''); // State for managing email input
+  const [isLoading, setIsLoading] = useState(false); // State for managing loading indicator
+  const [modalVisible, setModalVisible] = useState(false); // State for managing modal visibility
+  const [modalMessage, setModalMessage] = useState(''); // State for managing modal message
 
-  const { login } = useAuth();
-  const navigation = useNavigation<DrawerNavigationProp<RootStackParamList>>();
+  const { login } = useAuth(); // Get login function from AuthContext
+  const navigation = useNavigation<DrawerNavigationProp<RootStackParamList>>(); // Get navigation prop
 
   const handlerRegister = async () => {
     if (!username || !email || !password) {
-      setModalMessage('Por favor, rellena todos los campos.');
-      setModalVisible(true);
+      setModalMessage('Por favor, rellena todos los campos.'); // Set modal message for empty fields
+      setModalVisible(true); // Show modal
       return;
     }
 
-    setIsLoading(true);
+    setIsLoading(true); // Show loading indicator
     try {
-      // Registro de usuario
-      await registerUser(username, email, password);
-      // Inicio de sesión de usuario
-      const token = await loginUser(username, password);
-      login({ username }, token); // Pasar el usuario y el token a la función login
-      // Navegar a la pantalla principal
-      navigation.navigate('Home');
+      await registerUser(username, email, password); // Register user
+      const token = await loginUser(username, password); // Log in user and get token
+      login({ username }, token); // Use login function from AuthContext
+      navigation.navigate('Home'); // Navigate to Home screen
     } catch (error: any) {
-      setModalMessage(error.message);
-      setModalVisible(true);
+      setModalMessage(error.message); // Set modal message for error
+      setModalVisible(true); // Show modal
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Hide loading indicator
     }
   };
 

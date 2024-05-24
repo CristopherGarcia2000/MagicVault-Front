@@ -7,43 +7,47 @@ import { fetchDeckCards, removeCardFromDeck, searchCards } from '../services/api
 import { Card } from '../types/cardsType';
 import CardPreview from './cardPreview';
 
+// Define the props for the DeckModal component
 interface DeckModalProps {
   visible: boolean;
   onClose: () => void;
   deckName: string;
-  commander: string; // Nombre del comandante
+  commander: string; // Name of the commander
   user: string;
-  isUserDeck: boolean; // Nueva propiedad
+  isUserDeck: boolean; // New property to check if the deck belongs to the user
 }
 
+// DeckModal component to display and manage a deck of cards
 const DeckModal: React.FC<DeckModalProps> = ({ visible, onClose, deckName, commander, user, isUserDeck }) => {
-  const [cards, setCards] = useState<Card[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [cardName, setCardName] = useState<string>('');
-  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
-  const [previewVisible, setPreviewVisible] = useState<boolean>(false);
-  const [confirmVisible, setConfirmVisible] = useState<boolean>(false);
-  const [cardToRemove, setCardToRemove] = useState<string | null>(null);
-  const [commanderCard, setCommanderCard] = useState<Card | null>(null);
+  const [cards, setCards] = useState<Card[]>([]); // State to store the cards in the deck
+  const [loading, setLoading] = useState<boolean>(true); // State to manage the loading indicator
+  const [cardName, setCardName] = useState<string>(''); // State to manage the search input value
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null); // State to manage the selected card for preview
+  const [previewVisible, setPreviewVisible] = useState<boolean>(false); // State to control card preview modal visibility
+  const [confirmVisible, setConfirmVisible] = useState<boolean>(false); // State to control confirmation modal visibility
+  const [cardToRemove, setCardToRemove] = useState<string | null>(null); // State to store the card name to be removed
+  const [commanderCard, setCommanderCard] = useState<Card | null>(null); // State to store the commander card details
 
   useEffect(() => {
+    // Function to load the cards in the deck
     const loadCards = async () => {
       setLoading(true);
       try {
         const fetchedCards = await fetchDeckCards(user, deckName);
-        setCards(fetchedCards);
+        setCards(fetchedCards); // Update the cards state with fetched cards
       } catch (error) {
         console.error('Error fetching cards:', error);
       } finally {
-        setLoading(false);
+        setLoading(false); // Set loading to false after fetching cards
       }
     };
 
+    // Function to load the commander card details
     const loadCommanderCard = async () => {
       try {
         const response = await searchCards({ name: commander });
         if (response.data.length > 0) {
-          setCommanderCard(response.data[0]);
+          setCommanderCard(response.data[0]); // Update the commander card state with the fetched card
         }
       } catch (error) {
         console.error('Error fetching commander card:', error);
@@ -51,11 +55,12 @@ const DeckModal: React.FC<DeckModalProps> = ({ visible, onClose, deckName, comma
     };
 
     if (visible) {
-      loadCards();
-      loadCommanderCard();
+      loadCards(); // Load cards when the modal becomes visible
+      loadCommanderCard(); // Load commander card when the modal becomes visible
     }
   }, [visible, deckName, user, commander]);
 
+  // Function to filter cards by name based on search input
   const filterCardsByName = (name: string) => {
     if (!name) return cards;
     return cards.filter((card) =>
@@ -63,18 +68,20 @@ const DeckModal: React.FC<DeckModalProps> = ({ visible, onClose, deckName, comma
     );
   };
 
+  // Function to handle removing a card from the deck
   const handleRemoveCard = async () => {
     if (cardToRemove) {
       try {
         await removeCardFromDeck(deckName, user, cardToRemove);
-        setCards(cards.filter(card => card.name !== cardToRemove));
-        setConfirmVisible(false);
+        setCards(cards.filter(card => card.name !== cardToRemove)); // Update the cards state after removal
+        setConfirmVisible(false); // Close the confirmation modal
       } catch (error) {
         console.error('Error removing card from deck:', error);
       }
     }
   };
 
+  // Function to render a single card item
   const renderItem = (item: Card) => (
     <TouchableOpacity key={item.name} style={styles.card} onPress={() => { setSelectedCard(item); setPreviewVisible(true); }}>
       <Image source={{ uri: item.image_uris?.png }} style={styles.cardImage} />

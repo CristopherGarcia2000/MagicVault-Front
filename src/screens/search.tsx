@@ -8,83 +8,88 @@ import { Card } from '../types/cardsType';
 import { useAuth } from '../components/context/AuthContext';
 
 const SearchScreen: React.FC = () => {
-  const { addVisitedCard } = useAuth();
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
-  const [selectedType, setSelectedType] = useState<string>('');
-  const [selectedExpansion, setSelectedExpansion] = useState<string>('');
-  const [expansions, setExpansions] = useState<{ label: string; value: string }[]>([]);
-  const [results, setResults] = useState<Card[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
-  const [previewVisible, setPreviewVisible] = useState<boolean>(false);
-  const [cardName, setCardName] = useState<string>('');
-  const [noResultsModalVisible, setNoResultsModalVisible] = useState<boolean>(false);
-  const [typeModalVisible, setTypeModalVisible] = useState<boolean>(false);
-  const [expansionModalVisible, setExpansionModalVisible] = useState<boolean>(false);
+  const { addVisitedCard } = useAuth(); // Fetch the addVisitedCard function from the authentication context
+  const [selectedColors, setSelectedColors] = useState<string[]>([]); // Manage selected colors for filtering
+  const [selectedType, setSelectedType] = useState<string>(''); // Manage selected type for filtering
+  const [selectedExpansion, setSelectedExpansion] = useState<string>(''); // Manage selected expansion for filtering
+  const [expansions, setExpansions] = useState<{ label: string; value: string }[]>([]); // Store fetched expansions
+  const [results, setResults] = useState<Card[]>([]); // Store search results
+  const [loading, setLoading] = useState<boolean>(true); // Manage loading state
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null); // Manage selected card for preview
+  const [previewVisible, setPreviewVisible] = useState<boolean>(false); // Control visibility of card preview modal
+  const [cardName, setCardName] = useState<string>(''); // Manage card name input for searching
+  const [noResultsModalVisible, setNoResultsModalVisible] = useState<boolean>(false); // Control visibility of no results modal
+  const [typeModalVisible, setTypeModalVisible] = useState<boolean>(false); // Control visibility of type selection modal
+  const [expansionModalVisible, setExpansionModalVisible] = useState<boolean>(false); // Control visibility of expansion selection modal
 
+  // Fetch expansions on component mount
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const fetchedExpansions = await fetchExpansions();
-        setExpansions(fetchedExpansions);
+        const fetchedExpansions = await fetchExpansions(); // Fetch expansions from API
+        setExpansions(fetchedExpansions); // Set fetched expansions to state
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error('Error fetching data:', error); // Log error if fetching fails
       } finally {
-        setLoading(false);
+        setLoading(false); // Set loading state to false
       }
     };
 
     fetchData();
   }, []);
 
+  // Toggle selected color for filtering
   const toggleColor = (color: string) => {
     setSelectedColors((prev) =>
       prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color]
     );
   };
 
+  // Handle card search
   const handleSearch = async () => {
     setLoading(true);
     try {
       const filter: CardSearchFilter = {};
       if (selectedColors.length > 0) {
-        filter.colors = selectedColors;
+        filter.colors = selectedColors; // Add selected colors to filter
       }
       if (selectedType) {
-        filter.type = selectedType;
+        filter.type = selectedType; // Add selected type to filter
       }
       if (selectedExpansion) {
-        filter.expansion = selectedExpansion;
+        filter.expansion = selectedExpansion; // Add selected expansion to filter
       }
       if (cardName) {
-        filter.name = cardName;
+        filter.name = cardName; // Add card name to filter
       }
 
-      const searchResults = await searchCards(filter);
+      const searchResults = await searchCards(filter); // Fetch search results from API
       if (searchResults && Array.isArray(searchResults.data)) {
-        setResults(searchResults.data);
+        setResults(searchResults.data); // Set search results to state
 
         if (searchResults.data.length === 0) {
-          setNoResultsModalVisible(true);
+          setNoResultsModalVisible(true); // Show no results modal if no cards found
         }
       } else {
         setResults([]);
-        setNoResultsModalVisible(true);
+        setNoResultsModalVisible(true); // Show no results modal if no cards found
       }
     } catch (error) {
-      console.error('Error searching cards:', error);
+      console.error('Error searching cards:', error); // Log error if searching fails
     } finally {
-      setLoading(false);
+      setLoading(false); // Set loading state to false
     }
   };
 
+  // Handle card press to show preview
   const handleCardPress = (card: Card) => {
-    addVisitedCard(card);
-    setSelectedCard(card);
-    setPreviewVisible(true);
+    addVisitedCard(card); // Add card to visited cards
+    setSelectedCard(card); // Set selected card for preview
+    setPreviewVisible(true); // Show card preview modal
   };
-
+  
+  // Render each card item in the FlatList
   const renderItem = ({ item }: { item: Card }) => (
     <TouchableOpacity style={styles.card} onPress={() => handleCardPress(item)}>
       <Image source={{ uri: item.image_uris?.png }} style={styles.cardImage} />

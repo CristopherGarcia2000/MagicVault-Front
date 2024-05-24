@@ -8,6 +8,7 @@ import { fetchDecks, addDeck, deleteDeck, fetchAllDecks } from '../services/api/
 import DeckModal from '../components/DecksModal';
 import { Deck } from '../types/decksTypes';
 
+// Function to generate a random color
 const getRandomColor = () => {
   const letters = '0123456789ABCDEF';
   let color = '#';
@@ -32,6 +33,7 @@ const DecksScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // Function to load decks
   const loadDecks = async () => {
     try {
       const allDecks = await fetchAllDecks();
@@ -48,6 +50,7 @@ const DecksScreen: React.FC = () => {
     loadDecks();
   }, [user]);
 
+  // Function to handle adding a new deck
   const handleAddDeck = async () => {
     if (!newDeckName || !newCommanderName) {
       Alert.alert('Error', 'Por favor, complete todos los campos');
@@ -74,11 +77,13 @@ const DecksScreen: React.FC = () => {
     }
   };
 
+  // Function to confirm deletion of a deck
   const confirmDeleteDeck = (deck: Deck) => {
     setDeckToDelete(deck);
     setConfirmModalVisible(true);
   };
 
+  // Function to handle deleting a deck
   const handleDeleteDeck = async () => {
     if (deckToDelete) {
       try {
@@ -93,11 +98,13 @@ const DecksScreen: React.FC = () => {
     }
   };
 
+  // Function to open a deck
   const handleOpenDeck = (deck: Deck, isUserDeck: boolean) => {
     setSelectedDeck(deck);
     setIsUserDeck(isUserDeck);
   };
 
+  // Function to close a deck
   const handleCloseDeck = () => {
     setSelectedDeck(null);
   };

@@ -7,12 +7,13 @@ import Colors from '../styles/colors';
 import { FontAwesome } from '@expo/vector-icons';
 
 const UserProfileScreen = () => {
-  const { user, logout } = useAuth();
-  const navigation = useNavigation<DrawerNavigationProp<RootStackParamList>>();
-
+  const { user, logout } = useAuth(); // Get user and logout function from authentication context
+  const navigation = useNavigation<DrawerNavigationProp<RootStackParamList>>(); // Get navigation prop
+  
+  // Handle logout action
   const handleLogout = () => {
-    logout();
-    navigation.navigate('Home');
+    logout();// Call logout function from authentication context
+    navigation.navigate('Home');// Navigate to Home screen after logout
   };
 
   return (

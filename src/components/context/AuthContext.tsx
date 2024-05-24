@@ -1,29 +1,33 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {jwtDecode} from 'jwt-decode';
-import { Card } from '../../types/cardsType'; // Importar el tipo de datos Card
+import { jwtDecode } from 'jwt-decode';
+import { Card } from '../../types/cardsType'; // Import Card data type
 
+// Define the structure of AuthContext data
 interface AuthContextData {
   isAuthenticated: boolean;
   user: any | null;
   login: (user: any, token: string) => void;
   logout: () => void;
-  visitedCards: Card[]; // Lista de cartas visitadas recientemente
-  addVisitedCard: (card: Card) => void; // Función para agregar una carta visitada
+  visitedCards: Card[]; // List of recently visited cards
+  addVisitedCard: (card: Card) => void; // Function to add a visited card
 }
 
+// Create the AuthContext with default values
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
+// Define the AuthProvider component
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any | null>(null);
-  const [visitedCards, setVisitedCards] = useState<Card[]>([]); // Estado para mantener la lista de cartas visitadas
+  const [visitedCards, setVisitedCards] = useState<Card[]>([]); // State to maintain the list of visited cards
 
+  // Load data from AsyncStorage when the component mounts
   useEffect(() => {
     const loadStorageData = async () => {
       const token = await AsyncStorage.getItem('loginToken');
       const userData = await AsyncStorage.getItem('userData');
-      const visitedCardsData = await AsyncStorage.getItem('visitedCards'); // Cargar las cartas visitadas del almacenamiento
+      const visitedCardsData = await AsyncStorage.getItem('visitedCards'); // Load visited cards from storage
 
       if (token && userData) {
         const decodedToken: any = jwtDecode(token);
@@ -33,12 +37,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       if (visitedCardsData) {
-        setVisitedCards(JSON.parse(visitedCardsData)); // Establecer las cartas visitadas desde el almacenamiento
+        setVisitedCards(JSON.parse(visitedCardsData)); // Set visited cards from storage
       }
     };
     loadStorageData();
   }, []);
 
+  // Function to handle user login
   const login = async (user: any, token: string) => {
     const decodedToken: any = jwtDecode(token);
     const userWithMail = { ...user, email: decodedToken.email };
@@ -48,6 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await AsyncStorage.setItem('userData', JSON.stringify(userWithMail));
   };
 
+  // Function to handle user logout
   const logout = async () => {
     setUser(null);
     setIsAuthenticated(false);
@@ -55,17 +61,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     await AsyncStorage.removeItem('userData');
   };
 
-  // Función para agregar una carta visitada
+  // Function to add a visited card
   const addVisitedCard = async (card: Card) => {
-    // Agregar la nueva carta al inicio de la lista
-    const newVisitedCards = [card, ...visitedCards];
+    const newVisitedCards = [card, ...visitedCards]; // Add the new card to the beginning of the list
+    const limitedVisitedCards = newVisitedCards.slice(0, 6); // Limit the list to the last 6 visited cards
 
-    // Limitar la lista a las últimas 4 cartas visitadas
-    const limitedVisitedCards = newVisitedCards.slice(0, 6);
-
-    // Actualizar el estado y guardar en el almacenamiento
-    setVisitedCards(limitedVisitedCards);
-    await AsyncStorage.setItem('visitedCards', JSON.stringify(limitedVisitedCards));
+    setVisitedCards(limitedVisitedCards); // Update the state
+    await AsyncStorage.setItem('visitedCards', JSON.stringify(limitedVisitedCards)); // Save to storage
   };
 
   return (
@@ -75,6 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// Custom hook to use the AuthContext
 export const useAuth = () => {
   return useContext(AuthContext);
 };

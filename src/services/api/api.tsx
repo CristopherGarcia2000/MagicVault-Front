@@ -6,6 +6,7 @@ import { Deck } from '../../types/decksTypes';
 
 const API_BASE_URL = 'http://192.168.1.42:8082';
 
+// Fetch expansions from the server
 export const fetchExpansions = async () => {
   try {
     const response: AxiosResponse<{ data: { name: string, code: string }[] }> = await axios.get(`${API_BASE_URL}/sets`);
@@ -16,6 +17,7 @@ export const fetchExpansions = async () => {
   }
 };
 
+// Fetch a random commander card
 export const fetchRandomCommander = async (): Promise<Card> => {
   try {
     const response = await axios.get<Card>(`${API_BASE_URL}/random-commander`);
@@ -26,6 +28,7 @@ export const fetchRandomCommander = async (): Promise<Card> => {
   }
 };
 
+// Search for cards based on filters
 export const searchCards = async (filter: CardSearchFilter): Promise<{ data: Card[] }> => {
   try {
     const response: AxiosResponse<{ data: Card[] }> = await axios.post(`${API_BASE_URL}/search-cards`, filter);
@@ -43,6 +46,7 @@ export interface CardSearchFilter {
   name?: string;
 }
 
+// Register a new user
 export const registerUser = async (username: string, email: string, pass: string) => {
   try {
     const response = await axios.post(`${API_BASE_URL}/auth/register`, {
@@ -65,6 +69,7 @@ export const registerUser = async (username: string, email: string, pass: string
   }
 };
 
+// Fetch user details
 export const getUser = async (username: string, pass: string) => {
   try {
     const token = await AsyncStorage.getItem('loginToken');
@@ -89,6 +94,7 @@ export const getUser = async (username: string, pass: string) => {
   }
 };
 
+// Log in a user
 export const loginUser = async (username: string, password: string) => {
   try {
     const response = await axios.post(`${API_BASE_URL}/auth/login`, {
@@ -108,6 +114,7 @@ export const loginUser = async (username: string, password: string) => {
   }
 };
 
+// Fetch decks from a specific user
 export const getDecksFromUser = async (username: string): Promise<Deck[]> => {
   try {
     const response = await axios.get(`${API_BASE_URL}/decks/user/${username}`);
@@ -118,7 +125,7 @@ export const getDecksFromUser = async (username: string): Promise<Deck[]> => {
   }
 };
 
-
+// Fetch all decks
 export const fetchAllDecks = async (): Promise<Deck[]> => {
   try {
     const response: AxiosResponse<Deck[]> = await axios.get(`${API_BASE_URL}/decks`);
@@ -129,13 +136,13 @@ export const fetchAllDecks = async (): Promise<Deck[]> => {
   }
 };
 
-
 interface AddRemoveCardDeckRequest {
   deckname: string;
   cardName: string;
   user: string;
 }
 
+// Add a card to a deck
 export const addCardToDeck = async (deckname: string, cardName: string, user: string) => {
   try {
     const response = await axios.put(`${API_BASE_URL}/decks/addCard`, {
@@ -149,20 +156,25 @@ export const addCardToDeck = async (deckname: string, cardName: string, user: st
     throw error;
   }
 };
+
+// Fetch collections from a specific user
 export const getCollectionsFromUser = async (username:string) => {
   try {
     const response = await axios.get(`${API_BASE_URL}/collections/user/${username}`);
     return response.data; 
   } catch (error) {
-    console.error('Error fetching user decks:', error);
+    console.error('Error fetching user collections:', error);
     throw error;
   }
 };
+
 interface AddRemoveCardCollectionRequest {
   collectionname: string;
   cardName: string;
   user: string;
 }
+
+// Add a card to a collection
 export const addCardToCollections = async (deckname: string, cardName: string, user: string) => {
   try {
     const response = await axios.put(`${API_BASE_URL}/collections/addCard`, {
@@ -172,11 +184,12 @@ export const addCardToCollections = async (deckname: string, cardName: string, u
     } as AddRemoveCardDeckRequest);
     return response.data;
   } catch (error) {
-    console.error('Error adding card to deck:', error);
+    console.error('Error adding card to collection:', error);
     throw error;
   }
 };
 
+// Fetch collections of a user
 export const fetchCollections = async (user: string): Promise<Collection[]> => {
   try {
     const response: AxiosResponse<Collection[]> = await axios.get(`${API_BASE_URL}/collections/user/${user}`);
@@ -187,6 +200,7 @@ export const fetchCollections = async (user: string): Promise<Collection[]> => {
   }
 };
 
+// Add a new collection
 export const addCollection = async (collection: Collection) => {
   try {
     const response = await axios.post(`${API_BASE_URL}/collections`, collection);
@@ -206,6 +220,7 @@ interface RemoveCollectionRequest {
   user: string;
 }
 
+// Delete a collection
 export const deleteCollection = async (deckname: string, user: string) => {
   try {
     const response = await axios.delete(`${API_BASE_URL}/collections/delete`, {
@@ -218,6 +233,7 @@ export const deleteCollection = async (deckname: string, user: string) => {
   }  
 };
 
+// Fetch cards from a specific collection
 export const fetchCollectionCards = async (user: string, collectionName: string): Promise<Card[]> => {
   try {
     const response: AxiosResponse<Card[]> = await axios.get(`${API_BASE_URL}/collections/cards`, {
@@ -236,6 +252,7 @@ interface CardRemoveCardRequest {
   cardName: string;
 }
 
+// Remove a card from a collection
 export const removeCardFromCollection = async (deckname: string, user: string, cardName: string) => {
   try {
     const response = await axios.delete(`${API_BASE_URL}/collections/removeCard`, {
@@ -246,11 +263,12 @@ export const removeCardFromCollection = async (deckname: string, user: string, c
     });
     return response.data;
   } catch (error) {
-    console.error('Error removing card from deck:', error);
+    console.error('Error removing card from collection:', error);
     throw error;
   }
 };
 
+// Fetch decks from a specific user
 export const fetchDecks = async (user: string): Promise<Deck[]> => {
   try {
     const response: AxiosResponse<Deck[]> = await axios.get(`${API_BASE_URL}/decks/user/${user}`);
@@ -261,6 +279,7 @@ export const fetchDecks = async (user: string): Promise<Deck[]> => {
   }
 };
 
+// Add a new deck
 export const addDeck = async (deck: Deck) => {
   try {
     const response = await axios.post(`${API_BASE_URL}/decks`, deck);
@@ -275,6 +294,7 @@ export const addDeck = async (deck: Deck) => {
   }
 };
 
+// Delete a deck
 export const deleteDeck = async (deckname: string, user: string) => {
   try {
     const response = await axios.delete(`${API_BASE_URL}/decks/delete`, {
@@ -287,6 +307,7 @@ export const deleteDeck = async (deckname: string, user: string) => {
   }
 };
 
+// Fetch cards from a specific deck
 export const fetchDeckCards = async (user: string, deckName: string): Promise<Card[]> => {
   try {
     const response: AxiosResponse<Card[]> = await axios.get(`${API_BASE_URL}/decks/cards`, {
@@ -299,6 +320,7 @@ export const fetchDeckCards = async (user: string, deckName: string): Promise<Ca
   }
 };
 
+// Remove a card from a deck
 export const removeCardFromDeck = async (deckname: string, user: string, cardName: string) => {
   try {
     const response = await axios.delete(`${API_BASE_URL}/decks/removeCard`, {

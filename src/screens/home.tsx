@@ -8,41 +8,45 @@ import { useAuth } from '../components/context/AuthContext';
 import Colors from '../styles/colors';
 
 export default function HomeScreen() {
-  const { visitedCards } = useAuth();
-  const [randomCommander, setRandomCommander] = useState<Card | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [isCardPreviewVisible, setIsCardPreviewVisible] = useState<boolean>(false);
-  const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const { visitedCards } = useAuth(); // Get visited cards from authentication context
+  const [randomCommander, setRandomCommander] = useState<Card | null>(null); // State to store the random commander card
+  const [loading, setLoading] = useState<boolean>(true); // State to manage loading indicator
+  const [isCardPreviewVisible, setIsCardPreviewVisible] = useState<boolean>(false); // State to control card preview modal visibility
+  const [selectedCard, setSelectedCard] = useState<Card | null>(null); // State to store the selected card for preview
 
+  // Fetch a random commander when the component mounts
   useEffect(() => {
     fetchCommander();
   }, []);
 
+  // Function to fetch a random commander card
   const fetchCommander = async () => {
     try {
       setLoading(true);
-      const commander: Card = await fetchRandomCommander();
-      setRandomCommander(commander);
+      const commander: Card = await fetchRandomCommander(); // Fetch random commander card from API
+      setRandomCommander(commander); // Update state with the fetched commander card
     } catch (error) {
       console.error('Error fetching commander:', error);
     } finally {
-      setLoading(false);
+      setLoading(false); // Set loading to false after fetching the card
     }
   };
 
+  // Handle generating a new random commander
   const handleGenerateRandomCommander = () => {
     fetchCommander();
   };
 
+  // Handle pressing on an image to show card preview
   const handleImagePress = (card: Card) => {
-    setSelectedCard(card);
-    setIsCardPreviewVisible(true);
+    setSelectedCard(card); // Set the selected card for preview
+    setIsCardPreviewVisible(true); // Show the card preview modal
   };
 
+  // Handle closing the card preview modal
   const handleCloseCardPreview = () => {
-    setIsCardPreviewVisible(false);
+    setIsCardPreviewVisible(false); // Hide the card preview modal
   };
-
   return (
     <View style={styles.container}>
       <View style={styles.topContainer}>

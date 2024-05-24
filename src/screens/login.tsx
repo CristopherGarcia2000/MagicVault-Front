@@ -8,33 +8,33 @@ import { getUser, loginUser } from '../services/api/api';
 import { useAuth } from '../components/context/AuthContext';
 
 export default function LoginScreen() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [modalMessage, setModalMessage] = useState('');
+  const [username, setUsername] = useState(''); // State to manage the username input
+  const [password, setPassword] = useState(''); // State to manage the password input
+  const [isLoading, setIsLoading] = useState(false); // State to manage loading indicator
+  const [modalVisible, setModalVisible] = useState(false); // State to manage modal visibility
+  const [modalMessage, setModalMessage] = useState(''); // State to manage modal message
 
-  const { login } = useAuth();
-  const navigation = useNavigation<DrawerNavigationProp<RootStackParamList>>();
+  const { login } = useAuth(); // Get the login function from authentication context
+  const navigation = useNavigation<DrawerNavigationProp<RootStackParamList>>(); // Get the navigation object
 
+  // Handle the login process
   const handleLogin = async () => {
     if (!username || !password) {
-      setModalMessage('Por favor, rellena todos los campos.');
+      setModalMessage('Por favor, rellena todos los campos.'); // Show error message if fields are empty
       setModalVisible(true);
       return;
     }
 
-    setIsLoading(true);
+    setIsLoading(true); // Show loading indicator
     try {
-      // Llamar a la función de login del contexto de autenticación
-      const token = await loginUser(username, password);
-      login({ username }, token); // Pasar el usuario y el token a la función login
-      navigation.navigate('Home');
+      const token = await loginUser(username, password); // Call login API
+      login({ username }, token); // Use the login function from context
+      navigation.navigate('Home'); // Navigate to Home screen on successful login
     } catch (error) {
-      setModalMessage('Usuario o contraseña incorrectos.');
+      setModalMessage('Usuario o contraseña incorrectos.'); // Show error message on login failure
       setModalVisible(true);
     } finally {
-      setIsLoading(false);
+      setIsLoading(false); // Hide loading indicator
     }
   };
 

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TextInput, TouchableOpacity, Image, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
 import Modal from 'react-native-modal';
-import { Ionicons } from '@expo/vector-icons'; // Importar Ionicons
+import { Ionicons } from '@expo/vector-icons'; // Import Ionicons for icons
 import Colors from '../styles/colors';
 import { fetchCollectionCards, removeCardFromCollection } from '../services/api/api';
 import { Card } from '../types/cardsType';
 import CardPreview from '../components/cardPreview';
 
+// Define the props for the CollectionModal component
 interface CollectionModalProps {
     visible: boolean;
     onClose: () => void;
@@ -14,33 +15,35 @@ interface CollectionModalProps {
     user: string;
 }
 
+// CollectionModal component to display a collection of cards
 const CollectionModal: React.FC<CollectionModalProps> = ({ visible, onClose, collectionName, user }) => {
-    const [cards, setCards] = useState<Card[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [cardName, setCardName] = useState<string>('');
-    const [selectedCard, setSelectedCard] = useState<Card | null>(null);
-    const [previewVisible, setPreviewVisible] = useState<boolean>(false);
-    const [confirmVisible, setConfirmVisible] = useState<boolean>(false);
-    const [cardToRemove, setCardToRemove] = useState<string | null>(null);
+    const [cards, setCards] = useState<Card[]>([]); // State to store cards in the collection
+    const [loading, setLoading] = useState<boolean>(true); // State to manage loading state
+    const [cardName, setCardName] = useState<string>(''); // State to manage the search input value
+    const [selectedCard, setSelectedCard] = useState<Card | null>(null); // State to manage the selected card for preview
+    const [previewVisible, setPreviewVisible] = useState<boolean>(false); // State to control card preview modal visibility
+    const [confirmVisible, setConfirmVisible] = useState<boolean>(false); // State to control confirmation modal visibility
+    const [cardToRemove, setCardToRemove] = useState<string | null>(null); // State to store the card name to be removed
 
     useEffect(() => {
         const loadCards = async () => {
             setLoading(true);
             try {
                 const fetchedCards = await fetchCollectionCards(user, collectionName);
-                setCards(fetchedCards);
+                setCards(fetchedCards); // Update the cards state with fetched cards
             } catch (error) {
                 console.error('Error fetching cards:', error);
             } finally {
-                setLoading(false);
+                setLoading(false); // Set loading to false after fetching cards
             }
         };
 
         if (visible) {
-            loadCards();
+            loadCards(); // Load cards when the modal becomes visible
         }
     }, [visible, collectionName, user]);
 
+    // Filter cards by name based on search input
     const filterCardsByName = (name: string) => {
         if (!name) return cards;
         return cards.filter((card) =>
@@ -48,18 +51,20 @@ const CollectionModal: React.FC<CollectionModalProps> = ({ visible, onClose, col
         );
     };
 
+    // Handle removing a card from the collection
     const handleRemoveCard = async () => {
         if (cardToRemove) {
             try {
                 await removeCardFromCollection(collectionName, user, cardToRemove);
-                setCards(cards.filter(card => card.name !== cardToRemove));
-                setConfirmVisible(false);
+                setCards(cards.filter(card => card.name !== cardToRemove)); // Update the cards state after removal
+                setConfirmVisible(false); // Close the confirmation modal
             } catch (error) {
-                console.error('Error removing card from deck:', error);
+                console.error('Error removing card from collection:', error);
             }
         }
     };
 
+    // Render a single card item
     const renderItem = (item: Card) => (
         <TouchableOpacity key={item.name} style={styles.card} onPress={() => { setSelectedCard(item); setPreviewVisible(true); }}>
             <Image source={{ uri: item.image_uris?.png }} style={styles.cardImage} />

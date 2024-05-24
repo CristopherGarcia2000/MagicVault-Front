@@ -10,6 +10,7 @@ import { Collection } from '../types/collectionsTypes';
 import axios from 'axios';
 import CollectionModal from '../components/CollectionModal';
 
+// Function to generate a random color
 const getRandomColor = () => {
   const letters = '0123456789ABCDEF';
   let color = '#';
@@ -32,6 +33,7 @@ const CollectionsScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
 
+  // Function to load collections and their prices
   const loadCollections = async () => {
     try {
       const userCollections = await fetchCollections(user.username);
@@ -48,6 +50,7 @@ const CollectionsScreen: React.FC = () => {
     }
   };
 
+  // Function to load total price of a collection
   const loadCollectionsTotalPrice = async (collectionName: string) => {
     const fetchedCards = await fetchCollectionCards(user.username, collectionName);
     const totalValue = fetchedCards.reduce((total, card) => total + (parseFloat(card.prices.eur) || 0), 0);
@@ -58,6 +61,7 @@ const CollectionsScreen: React.FC = () => {
     loadCollections();
   }, [user]);
 
+  // Function to handle adding a new collection
   const handleAddCollection = async () => {
     if (!newCollectionName) {
       Alert.alert('Error', 'Por favor, complete todos los campos');
@@ -92,11 +96,13 @@ const CollectionsScreen: React.FC = () => {
     }
   };
 
+  // Function to confirm collection deletion
   const confirmDeleteCollection = (collection: Collection) => {
     setCollectionToDelete(collection);
     setConfirmModalVisible(true);
   };
 
+  // Function to handle deleting a collection
   const handleDeleteCollection = async () => {
     if (collectionToDelete) {
       try {
@@ -111,10 +117,12 @@ const CollectionsScreen: React.FC = () => {
     }
   };
 
+  // Function to open a collection
   const handleOpenCollection = (collection: Collection) => {
     setSelectedCollection(collection);
   };
 
+  // Function to close a collection
   const handleCloseCollection = () => {
     setSelectedCollection(null);
   };
@@ -142,7 +150,7 @@ const CollectionsScreen: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <PieChart
-          style = {styles.piechart}
+          style={styles.piechart}
           data={pieChartData}
           width={220}
           height={220}
@@ -158,7 +166,7 @@ const CollectionsScreen: React.FC = () => {
       <View style={styles.textContainer}>
           <Text style={styles.totalText}>Valor Total: €{totalValue}</Text>
           <Text style={styles.totalText}>Total de Cartas: {totalCards}</Text>
-        </View>
+      </View>
       <TextInput
         style={styles.searchBar}
         placeholder="Buscar..."
@@ -166,41 +174,41 @@ const CollectionsScreen: React.FC = () => {
         value={searchText}
         onChangeText={setSearchText}
       />
-      <View> 
-      <ScrollView
-        style={styles.scrollView}
-        ref={scrollViewRef}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
-        onScroll={({ nativeEvent }) => {
-          if (nativeEvent.contentOffset.y <= 0) {
-            loadCollections();
+      <View>
+        <ScrollView
+          style={styles.scrollView}
+          ref={scrollViewRef}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
-        }}
-        scrollEventThrottle={16}
-        contentContainerStyle={{ paddingBottom: 100 }}
-      >
-        {filteredCollections.map((collection) => (
-          <TouchableOpacity key={collection.collectionname} style={styles.collectionItem} onPress={() => handleOpenCollection(collection)}>
-            <View style={[styles.colorBar, { backgroundColor: collection.color }]} />
-            <View style={styles.collectionTextContainer}>
-              <Text style={styles.collectionName}>{collection.collectionname}</Text>
-              <View style={styles.cardCountContainer}>
-                <MaterialCommunityIcons name="cards" size={24} color="white" />
-                <Text style={styles.cardCount}>Cartas: {collection.collectionlist.length}</Text>
+          onScroll={({ nativeEvent }) => {
+            if (nativeEvent.contentOffset.y <= 0) {
+              loadCollections();
+            }
+          }}
+          scrollEventThrottle={16}
+          contentContainerStyle={{ paddingBottom: 100 }}
+        >
+          {filteredCollections.map((collection) => (
+            <TouchableOpacity key={collection.collectionname} style={styles.collectionItem} onPress={() => handleOpenCollection(collection)}>
+              <View style={[styles.colorBar, { backgroundColor: collection.color }]} />
+              <View style={styles.collectionTextContainer}>
+                <Text style={styles.collectionName}>{collection.collectionname}</Text>
+                <View style={styles.cardCountContainer}>
+                  <MaterialCommunityIcons name="cards" size={24} color="white" />
+                  <Text style={styles.cardCount}>Cartas: {collection.collectionlist.length}</Text>
+                </View>
+                <View style={styles.moneyCountContainer}>
+                  <FontAwesome5 name="coins" size={15} color="white" />
+                  <Text style={styles.moneyCount}>Valor: €{collectionPrices[collection.collectionname] !== undefined ? Number(collectionPrices[collection.collectionname]).toFixed(2) : 'Cargando...'}</Text>
+                </View>
               </View>
-              <View style={styles.moneyCountContainer}>
-                <FontAwesome5 name="coins" size={15} color="white" />
-                <Text style={styles.moneyCount}>Valor: €{collectionPrices[collection.collectionname] !== undefined ? Number(collectionPrices[collection.collectionname]).toFixed(2) : 'Cargando...'}</Text>
-              </View>
-            </View>
-            <TouchableOpacity onPress={() => confirmDeleteCollection(collection)}>
-              <MaterialIcons name="delete" size={24} color="#fff" />
+              <TouchableOpacity onPress={() => confirmDeleteCollection(collection)}>
+                <MaterialIcons name="delete" size={24} color="#fff" />
+              </TouchableOpacity>
             </TouchableOpacity>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+          ))}
+        </ScrollView>
       </View>
       <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
         <Text style={styles.addButtonText}>Agregar Colección</Text>
@@ -250,7 +258,6 @@ const CollectionsScreen: React.FC = () => {
     </View>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
