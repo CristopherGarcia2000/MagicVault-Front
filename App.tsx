@@ -1,20 +1,16 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { StyleSheet} from 'react-native';
+import AppNavigator from './src/components/appNavigator';
+import { AuthProvider } from './src/components/context/AuthContext';
 
 export default function App() {
+  
   return (
-    <View style={styles.container}>
-      <Text>Bienvenido A Magic Vault</Text>
-      <StatusBar style="auto" />
-    </View>
+    <AuthProvider>
+      <AppNavigator/>
+    </AuthProvider>  
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });
